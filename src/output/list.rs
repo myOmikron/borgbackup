@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use crate::output::common::{Encryption, Repository};
 
 /// Output of the borg list command
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ListRepository {
     /// Information about the repository
     repository: Repository,
@@ -17,7 +17,7 @@ pub struct ListRepository {
 }
 
 /// The short output version of the archive
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ListArchive {
     /// Hexadecimal archive ID
     pub id: String,

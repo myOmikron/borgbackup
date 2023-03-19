@@ -8,7 +8,7 @@ use crate::output::common::{Cache, Encryption, Limits, Repository};
 use crate::output::info::ArchiveStats;
 
 /// The output of a borg create command
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Create {
     /// Information about the repository
     repository: Repository,
@@ -21,7 +21,7 @@ pub struct Create {
 }
 
 /// The archive output of a borg create command
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct CreateArchive {
     /// Hexadecimal archive ID
     pub id: String,

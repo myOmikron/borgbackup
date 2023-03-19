@@ -4,7 +4,7 @@ use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
 
 /// Information about the repository
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Repository {
     /// The ID of the repository, normally 64 hex characters
     pub id: String,
@@ -16,7 +16,7 @@ pub struct Repository {
 }
 
 /// The encryption settings of the repository
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Encryption {
     /// The selected encryption mode
     pub mode: EncryptionMode,
@@ -30,7 +30,7 @@ pub struct Encryption {
 ///
 /// See https://borgbackup.readthedocs.io/en/stable/usage/init.html#more-encryption-modes
 /// for further information about encryption modes.
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy)]
 pub enum EncryptionMode {
     /// No encryption, nor hashing.
     ///
@@ -78,7 +78,7 @@ pub enum EncryptionMode {
 }
 
 /// The cache info
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Cache {
     /// Path to the local repository cache
     pub path: String,
@@ -87,7 +87,7 @@ pub struct Cache {
 }
 
 /// The stats of the cache
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy)]
 pub struct CacheStats {
     /// Number of chunks
     pub total_chunks: u64,
@@ -104,7 +104,7 @@ pub struct CacheStats {
 }
 
 /// Object describing the utilization of Borg limits
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy)]
 pub struct Limits {
     /// Float between 0 and 1 describing how large this archive is relative
     /// to the maximum size allowed by Borg

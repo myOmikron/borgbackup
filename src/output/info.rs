@@ -7,7 +7,7 @@ use serde_json::Value;
 use crate::output::common::{Cache, Encryption, Limits, Repository};
 
 /// The output of a borg info call.
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum Info {
     /// The info of a repository
     Repository {
@@ -34,7 +34,7 @@ pub enum Info {
 }
 
 /// Information about an archive
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct InfoArchive {
     /// Hexadecimal archive ID
     pub id: String,
@@ -67,7 +67,7 @@ pub struct InfoArchive {
 }
 
 /// The stats of an archive
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy)]
 pub struct ArchiveStats {
     /// Size after compression
     pub compressed_size: u64,

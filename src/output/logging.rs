@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 /// All valid logging messages are defined here
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 #[serde(tag = "type")]
 pub enum LoggingMessage {
     /// Any regular log output invokes this type.
@@ -101,7 +101,7 @@ pub enum LoggingMessage {
 }
 
 /// The valid loglevel of borg
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Debug, Clone, Copy)]
 #[serde(rename_all = "UPPERCASE")]
 pub enum LevelName {
     /// Debug level
@@ -120,7 +120,7 @@ pub enum LevelName {
 /// without actually using the full text, since texts change more frequently.
 ///
 /// Message IDs are unambiguous and reduce the need to parse log messages.
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Debug, Clone, Copy)]
 pub enum MessageId {
     /// Archive {} already exists
     #[serde(rename = "Archive.AlreadyExists")]
