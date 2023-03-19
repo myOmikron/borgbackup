@@ -3,7 +3,7 @@
 use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
 
-use crate::commands::common::{Encryption, Repository};
+use crate::output::common::{Encryption, Repository};
 
 /// Output of the borg list command
 #[derive(Serialize, Deserialize)]

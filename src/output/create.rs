@@ -4,8 +4,8 @@ use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use crate::commands::common::{Cache, Encryption, Limits, Repository};
-use crate::commands::info::ArchiveStats;
+use crate::output::common::{Cache, Encryption, Limits, Repository};
+use crate::output::info::ArchiveStats;
 
 /// The output of a borg create command
 #[derive(Serialize, Deserialize)]
