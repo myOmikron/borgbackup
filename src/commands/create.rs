@@ -12,7 +12,7 @@ use tokio::io::AsyncReadExt;
 #[cfg(feature = "tokio")]
 use tokio::io::{AsyncBufReadExt, BufReader};
 
-use crate::commands::common::{CommonOptions, CompressionMode, PatternInstruction};
+use crate::commands::common::{CommonOptions, CompressionMode, Pattern, PatternInstruction};
 use crate::output::create::Create;
 use crate::output::logging::{LevelName, LoggingMessage, MessageId};
 
@@ -70,6 +70,24 @@ pub struct CreateOptions {
     /// borg create --pattern=+pics/2018/good --pattern=-pics/2018 repo::arch pics
     /// ```
     pub patterns: Vec<PatternInstruction>,
+    /// Exclude paths matching PATTERN.
+    ///
+    /// See [Pattern] for further information.
+    pub excludes: Vec<Pattern>,
+    /// Only store numeric user and group identifiers
+    pub numeric_ids: bool,
+    /// Detect sparse holes in input (supported only by fixed chunker)
+    pub sparse: bool,
+    /// Open and read block and char device files as well as FIFOs as if they were regular files.
+    ///
+    /// Also follows symlinks pointing to these kinds of files.
+    pub read_special: bool,
+    /// Do not read and store xattrs into archive
+    pub no_xattrs: bool,
+    /// Do not read and store ACLs into archive
+    pub no_acls: bool,
+    /// Do not read and store flags (e.g. NODUMP, IMMUTABLE) into archive
+    pub no_flags: bool,
 }
 
 impl CreateOptions {
@@ -89,23 +107,40 @@ impl CreateOptions {
             paths,
             exclude_caches: false,
             patterns,
+            excludes: vec![],
+            numeric_ids: false,
+            sparse: false,
+            read_special: false,
+            no_xattrs: false,
+            no_acls: false,
+            no_flags: false,
         }
     }
 }
 
 fn fmt_args(options: &CreateOptions, common_options: &CommonOptions, progress: bool) -> String {
     format!(
-        "--log-json{p} {common_options}create --json{comment}{compression}{ex_caches}{patterns} {repo}::{archive} {paths}",
+        "--log-json{p} {common_options}create --json{comment}{compression}{num_ids}{sparse}{read_special}{no_xattr}{no_acls}{no_flags}{ex_caches}{patterns}{excludes} {repo}::{archive} {paths}",
         p = if progress { " --progress" } else { "" },
         comment = options.comment.as_ref().map_or("".to_string(), |x| format!(
             " --comment {}",
             shlex::quote(x)
         )),
         compression = options.compression.as_ref().map_or("".to_string(), |x| format!(" --compression {x}")),
+        num_ids = if options.numeric_ids { " --numeric-ids" } else { "" },
+        sparse = if options.sparse { " --sparse" } else { "" },
+        read_special = if options.read_special { " --read-special" } else { "" },
+        no_xattr = if options.no_xattrs { " --noxattrs" } else { "" },
+        no_acls = if options.no_acls { " --noacls" } else { "" },
+        no_flags = if options.no_flags { " --noflags" } else { "" },
         ex_caches = if options.exclude_caches { " --exclude-caches" } else {""},
         patterns = options.patterns.iter().map(|x| format!(
             " --pattern={}",
-            shlex::quote(&x.to_string())
+            shlex::quote(&x.to_string()),
+        )).collect::<Vec<String>>().join(" "),
+        excludes = options.excludes.iter().map(|x| format!(
+            " --exclude={}",
+            shlex::quote(&x.to_string()),
         )).collect::<Vec<String>>().join(" "),
         repo = shlex::quote(&options.repository),
         archive = shlex::quote(&options.archive),
