@@ -35,7 +35,7 @@ pub struct CreateOptions {
     /// In the archive name, you may use the following placeholders:
     /// {now}, {utcnow}, {fqdn}, {hostname}, {user} and some others.
     ///
-    /// See https://borgbackup.readthedocs.io/en/stable/usage/help.html#borg-patterns for further
+    /// See <https://borgbackup.readthedocs.io/en/stable/usage/help.html#borg-patterns> for further
     /// information.
     pub archive: String,
     /// The passphrase for the repository
@@ -54,7 +54,7 @@ pub struct CreateOptions {
     /// All given paths will be recursively traversed.
     pub paths: Vec<String>,
     /// Exclude directories that contain a CACHEDIR.TAG file
-    /// (http://www.bford.info/cachedir/spec.html)
+    /// (<http://www.bford.info/cachedir/spec.html>)
     pub exclude_caches: bool,
     /// The patterns to apply
     ///

@@ -28,7 +28,7 @@ pub struct Encryption {
 
 /// The encryption mode of the repository.
 ///
-/// See https://borgbackup.readthedocs.io/en/stable/usage/init.html#more-encryption-modes
+/// See <https://borgbackup.readthedocs.io/en/stable/usage/init.html#more-encryption-modes>
 /// for further information about encryption modes.
 #[derive(Serialize, Deserialize, Debug, Clone, Copy)]
 pub enum EncryptionMode {

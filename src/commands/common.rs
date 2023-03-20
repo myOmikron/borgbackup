@@ -21,7 +21,7 @@ pub enum PatternInstruction {
     Include(Pattern),
     /// Exclude matched files
     Exclude(Pattern),
-    /// If an [PatternRule::ExcludeNoRecurse] pattern matches a directory, it won't recurse into
+    /// If an [PatternInstruction::ExcludeNoRecurse] pattern matches a directory, it won't recurse into
     /// it and won't discover any potential matches for include rules below that directory.
     ExcludeNoRecurse(Pattern),
 }
@@ -169,7 +169,7 @@ impl Display for CompressionMode {
 
 /// The encryption mode of the repository.
 ///
-/// See https://borgbackup.readthedocs.io/en/stable/usage/init.html#more-encryption-modes
+/// See <https://borgbackup.readthedocs.io/en/stable/usage/init.html#more-encryption-modes>
 /// for further information about encryption modes.
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum EncryptionMode {
