@@ -140,7 +140,6 @@ fn parse_result(res: Output) -> Result<(), InitError> {
 /// **Parameter**:
 /// - `options`: Reference to [InitOptions]
 /// - `common_options`: The [CommonOptions] that can be applied to any command
-#[cfg(feature = "tokio")]
 pub fn init(options: &InitOptions, common_options: &CommonOptions) -> Result<(), InitError> {
     let local_path = common_options.local_path.as_ref().map_or("borg", |x| x);
 
