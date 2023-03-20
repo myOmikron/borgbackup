@@ -15,4 +15,4 @@ byte-unit = { version = "~4" }
 
 tokio = { version = ">=1.23.1", features = ["rt-multi-thread", "sync", "macros"] }
 
-borgbackup = { version = "~0.1", path = "..", features = ["tokio"] }
+borgbackup = { version = "~0.2", path = "..", features = ["tokio"] }
