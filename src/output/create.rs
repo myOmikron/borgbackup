@@ -11,13 +11,13 @@ use crate::output::info::ArchiveStats;
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Create {
     /// Information about the repository
-    repository: Repository,
+    pub repository: Repository,
     /// Information about the cache
-    cache: Option<Cache>,
+    pub cache: Option<Cache>,
     /// Information about the encryption of the repository
-    encryption: Option<Encryption>,
-    /// The list of archives with their information
-    archives: Vec<CreateArchive>,
+    pub encryption: Option<Encryption>,
+    /// The information about the created archive
+    pub archive: CreateArchive,
 }
 
 /// The archive output of a borg create command
@@ -36,7 +36,7 @@ pub struct CreateArchive {
     /// Duration in seconds between start and end in seconds
     pub duration: f64,
     /// The chunker parameters the archive has been created with.
-    pub chunker_params: Vec<Value>,
+    pub chunker_params: Option<Vec<Value>>,
     /// Start timestamp
     pub start: NaiveDateTime,
     /// End timestamp.

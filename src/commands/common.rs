@@ -4,6 +4,48 @@ use std::fmt::{Display, Formatter};
 
 use serde::{Deserialize, Serialize};
 
+/// The compression modes of an archive.
+///
+/// The compression modes `auto` and `obfuscate` are currently not supported by this library.
+#[derive(Serialize, Deserialize, Debug, Clone, Copy)]
+pub enum CompressionMode {
+    /// No compression
+    None,
+    /// Use lz4 compression. Very high speed, very low compression.
+    Lz4,
+    /// Use zstd ("zstandard") compression, a modern wide-range algorithm.
+    ///
+    /// Allowed values ranging from 1 to 22, where 1 is the fastest and 22 the highest compressing.
+    ///
+    /// Archives compressed with zstd are not compatible with borg < 1.1.4.
+    Zstd(u8),
+    /// Use zlib ("gz") compression. Medium speed, medium compression.
+    ///
+    /// Allowed values ranging from 0 to 9.
+    /// Giving level 0 (means "no compression", but still has zlib protocol overhead)
+    /// is usually pointless, you better use [CompressionMode::None] compression.
+    Zlib(u8),
+    /// Use lzma ("xz") compression. Low speed, high compression.
+    ///
+    /// Allowed values ranging from 0 to 9.
+    /// Giving levels above 6 is pointless and counterproductive because it does
+    /// not compress better due to the buffer size used by borg - but it wastes
+    /// lots of CPU cycles and RAM.
+    Lzma(u8),
+}
+
+impl Display for CompressionMode {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            CompressionMode::None => write!(f, "none"),
+            CompressionMode::Lz4 => write!(f, "lz4"),
+            CompressionMode::Zstd(x) => write!(f, "zstd,{x}"),
+            CompressionMode::Zlib(x) => write!(f, "zlib,{x}"),
+            CompressionMode::Lzma(x) => write!(f, "lzma,{x}"),
+        }
+    }
+}
+
 /// The encryption mode of the repository.
 ///
 /// See https://borgbackup.readthedocs.io/en/stable/usage/init.html#more-encryption-modes

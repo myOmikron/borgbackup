@@ -224,6 +224,51 @@ pub enum MessageId {
     /// Object with key {} not found in repository {}.
     #[serde(rename = "Repository.ObjectNotFound")]
     RepositoryObjectNotFound,
+    /// Begin a cache transaction
+    #[serde(rename = "cache.begin_transaction")]
+    CacheBeginTransaction,
+    /// appears with borg create --no-cache-sync
+    #[serde(rename = "cache.download_chunks")]
+    CacheDownloadChunks,
+    /// TODO
+    #[serde(rename = "cache.commit")]
+    CacheCommit,
+    /// info is one string element, the name of the archive currently synced.
+    #[serde(rename = "cache.sync")]
+    CacheSync,
+    /// TODO
+    #[serde(rename = "repository.compact_segments")]
+    RepositoryCompactSegments,
+    /// TODO
+    #[serde(rename = "repository.replay_segments")]
+    RepositoryReplaySegments,
+    /// TODO
+    #[serde(rename = "repository.check")]
+    RepositoryCheck,
+    /// TODO
+    #[serde(rename = "check.verify_data")]
+    CheckVerifyData,
+    /// TODO
+    #[serde(rename = "check.rebuild_manifest")]
+    CheckRebuildManifest,
+    /// info is one string element, the name of the path currently extracted.
+    #[serde(rename = "extract")]
+    Extract,
+    /// TODO
+    #[serde(rename = "extract.permissions")]
+    ExtractPermissions,
+    /// TODO
+    #[serde(rename = "archive.delete")]
+    ArchiveDelete,
+    /// TODO
+    #[serde(rename = "archive.calc_stats")]
+    ArchiveCalcStats,
+    /// TODO
+    #[serde(rename = "prune")]
+    Prune,
+    /// TODO
+    #[serde(rename = "upgrade.convert_segments")]
+    UpgradeConvertSegments,
 }
 
 impl Display for MessageId {
@@ -279,6 +324,21 @@ impl Display for MessageId {
             MessageId::RepositoryInvalidRepository => write!(f, "Repository.InvalidRepository"),
             MessageId::RepositoryAtticRepository => write!(f, "Repository.AtticRepository"),
             MessageId::RepositoryObjectNotFound => write!(f, "Repository.ObjectNotFound"),
+            MessageId::CacheBeginTransaction => write!(f, "cache.begin_transaction"),
+            MessageId::CacheDownloadChunks => write!(f, "cache.download_chunks"),
+            MessageId::CacheCommit => write!(f, "cache.commit"),
+            MessageId::CacheSync => write!(f, "cache.sync"),
+            MessageId::RepositoryCompactSegments => write!(f, "repository.compact_segments"),
+            MessageId::RepositoryReplaySegments => write!(f, "repository.replay_segments"),
+            MessageId::RepositoryCheck => write!(f, "repository.check"),
+            MessageId::CheckVerifyData => write!(f, "check.verify_data"),
+            MessageId::CheckRebuildManifest => write!(f, "check.rebuild_manifest"),
+            MessageId::Extract => write!(f, "extract"),
+            MessageId::ExtractPermissions => write!(f, "extract.permissions"),
+            MessageId::ArchiveDelete => write!(f, "archive.delete"),
+            MessageId::ArchiveCalcStats => write!(f, "archive.calc_stats"),
+            MessageId::Prune => write!(f, "prune"),
+            MessageId::UpgradeConvertSegments => write!(f, "upgrade.convert_segments"),
         }
     }
 }

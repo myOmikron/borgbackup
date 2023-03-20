@@ -11,6 +11,8 @@ tempfile = { version = "~3" }
 log = { version = "~0.4" }
 env_logger = { version = "~0.10" }
 
+byte-unit = { version = "~4" }
+
 tokio = { version = ">=1.23.1", features = ["rt-multi-thread", "sync", "macros"] }
 
 borgbackup = { version = "~0.1", path = "..", features = ["tokio"] }
