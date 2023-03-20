@@ -4,6 +4,127 @@ use std::fmt::{Display, Formatter};
 
 use serde::{Deserialize, Serialize};
 
+/// A pattern instruction.
+/// These instructions will be used for the `--pattern` command line parameter.
+///
+/// [PatternInstruction::Include] are useful to include paths that are contained in an excluded path.
+/// The first matching pattern is used so if an [PatternInstruction::Include] matches before
+/// an [PatternInstruction::Exclude], the file is backed up.
+/// If an [PatternInstruction::ExcludeNoRecurse] pattern matches a directory,
+/// it won't recurse into it and won't discover any potential matches for include rules
+/// below that directory.
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub enum PatternInstruction {
+    /// A plain root path to use as a starting point
+    Root(String),
+    /// Include matched files
+    Include(Pattern),
+    /// Exclude matched files
+    Exclude(Pattern),
+    /// If an [PatternRule::ExcludeNoRecurse] pattern matches a directory, it won't recurse into
+    /// it and won't discover any potential matches for include rules below that directory.
+    ExcludeNoRecurse(Pattern),
+}
+
+impl Display for PatternInstruction {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            PatternInstruction::Root(path) => write!(f, "P {path}"),
+            PatternInstruction::Include(pattern) => write!(f, "+ {pattern}"),
+            PatternInstruction::Exclude(pattern) => write!(f, "- {pattern}"),
+            PatternInstruction::ExcludeNoRecurse(pattern) => write!(f, "! {pattern}"),
+        }
+    }
+}
+
+/// The path/filenames used as input for the pattern matching start from the
+/// currently active recursion root. You usually give the recursion root(s)
+/// when invoking borg and these can be either relative or absolute paths.
+///
+/// [Pattern::Regex], [Pattern::Shell] and [Pattern::FnMatch] patterns are all implemented on top
+/// of the Python SRE engine. It is very easy to formulate patterns for each of these types which
+/// requires an inordinate amount of time to match paths.
+///
+/// If untrusted users are able to supply patterns, ensure they cannot supply [Pattern::Regex]
+/// patterns. Further, ensure that [Pattern::Shell] and [Pattern::FnMatch] patterns only contain a
+/// handful of wildcards at most.
+///
+/// Note that this enum is only for use in [PatternInstruction].
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub enum Pattern {
+    /// Fnmatch <https://docs.python.org/3/library/fnmatch.html>:
+    ///
+    /// These patterns use a variant of shell pattern syntax, with '\*' matching
+    /// any number of characters, '?' matching any single character, '\[...]'
+    /// matching any single character specified, including ranges, and '\[!...]'
+    /// matching any character not specified.
+    ///
+    /// For the purpose of these patterns, the path separator
+    /// (backslash for Windows and '/' on other systems) is not treated specially.
+    /// Wrap meta-characters in brackets for a literal match
+    /// (i.e. \[?] to match the literal character ?).
+    /// For a path to match a pattern, the full path must match, or it must match
+    /// from the start of the full path to just before a path separator. Except
+    /// for the root path, paths will never end in the path separator when
+    /// matching is attempted.  Thus, if a given pattern ends in a path
+    /// separator, a '*' is appended before matching is attempted.
+    ///
+    /// A leading path separator is always removed.
+    FnMatch(String),
+    /// Like [Pattern::FnMatch] patterns these are similar to shell patterns.
+    /// The difference is that the pattern may include **/ for matching zero or more
+    /// directory levels, * for matching zero or more arbitrary characters with the exception of
+    /// any path separator.
+    ///
+    /// A leading path separator is always removed.
+    Shell(String),
+    /// Regular expressions similar to those found in Perl are supported. Unlike shell patterns,
+    /// regular expressions are not required to match the full path and any substring match
+    /// is sufficient.
+    ///
+    /// It is strongly recommended to anchor patterns to the start ('^'), to the end ('$') or both.
+    ///
+    /// Path separators (backslash for Windows and '/' on other systems) in paths are
+    /// always normalized to a forward slash ('/') before applying a pattern.
+    ///
+    /// The regular expression syntax is described in the Python documentation for the re module
+    /// <https://docs.python.org/3/library/re.html>.
+    Regex(String),
+    /// This pattern style is useful to match whole sub-directories.
+    ///
+    /// The pattern `root/somedir` matches `root/somedir` and everything therein.
+    /// A leading path separator is always removed.
+    PathPrefix(String),
+    /// This pattern style is (only) useful to match full paths.
+    ///
+    /// This is kind of a pseudo pattern as it can not have any variable or unspecified parts -
+    /// the full path must be given. `root/file.ext` matches `root/file.ext` only.
+    ///
+    /// A leading path separator is always removed.
+    ///
+    /// Implementation note: this is implemented via very time-efficient O(1)
+    /// hashtable lookups (this means you can have huge amounts of such patterns
+    /// without impacting performance much).
+    /// Due to that, this kind of pattern does not respect any context or order.
+    /// If you use such a pattern to include a file, it will always be included
+    /// (if the directory recursion encounters it).
+    /// Other include/exclude patterns that would normally match will be ignored.
+    /// Same logic applies for exclude.
+    PathFullMatch(String),
+}
+
+impl Display for Pattern {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Pattern::FnMatch(x) => write!(f, "fm:{x}"),
+            Pattern::Shell(x) => write!(f, "sh:{x}"),
+            Pattern::Regex(x) => write!(f, "re:{x}"),
+            Pattern::PathPrefix(x) => write!(f, "pp:{x}"),
+            Pattern::PathFullMatch(x) => write!(f, "pf:{x}"),
+        }
+    }
+}
+
 /// The compression modes of an archive.
 ///
 /// The compression modes `auto` and `obfuscate` are currently not supported by this library.

@@ -12,7 +12,7 @@ use tokio::io::AsyncReadExt;
 #[cfg(feature = "tokio")]
 use tokio::io::{AsyncBufReadExt, BufReader};
 
-use crate::commands::common::{CommonOptions, CompressionMode};
+use crate::commands::common::{CommonOptions, CompressionMode, PatternInstruction};
 use crate::output::create::Create;
 use crate::output::logging::{LevelName, LoggingMessage, MessageId};
 
@@ -53,17 +53,60 @@ pub struct CreateOptions {
     ///
     /// All given paths will be recursively traversed.
     pub paths: Vec<String>,
+    /// Exclude directories that contain a CACHEDIR.TAG file
+    /// (http://www.bford.info/cachedir/spec.html)
+    pub exclude_caches: bool,
+    /// The patterns to apply
+    ///
+    /// Using these, you may specify the backup roots (starting points)
+    /// and patterns for inclusion/exclusion.
+    ///
+    /// See [PatternInstruction] for further information.
+    ///
+    /// Note that the order of the instructions is important:
+    ///
+    /// ```bash
+    /// # backup pics, but not the ones from 2018, except the good ones:
+    /// borg create --pattern=+pics/2018/good --pattern=-pics/2018 repo::arch pics
+    /// ```
+    pub patterns: Vec<PatternInstruction>,
+}
+
+impl CreateOptions {
+    /// Create an new [CreateOptions]
+    pub fn new(
+        repository: String,
+        archive: String,
+        paths: Vec<String>,
+        patterns: Vec<PatternInstruction>,
+    ) -> Self {
+        Self {
+            repository,
+            archive,
+            passphrase: None,
+            comment: None,
+            compression: None,
+            paths,
+            exclude_caches: false,
+            patterns,
+        }
+    }
 }
 
 fn fmt_args(options: &CreateOptions, common_options: &CommonOptions, progress: bool) -> String {
     format!(
-        "--log-json{p} {common_options}create --json{comment}{compression} {repo}::{archive} {paths}",
+        "--log-json{p} {common_options}create --json{comment}{compression}{ex_caches}{patterns} {repo}::{archive} {paths}",
         p = if progress { " --progress" } else { "" },
         comment = options.comment.as_ref().map_or("".to_string(), |x| format!(
             " --comment {}",
             shlex::quote(x)
         )),
         compression = options.compression.as_ref().map_or("".to_string(), |x| format!(" --compression {x}")),
+        ex_caches = if options.exclude_caches { " --exclude-caches" } else {""},
+        patterns = options.patterns.iter().map(|x| format!(
+            " --pattern={}",
+            shlex::quote(&x.to_string())
+        )).collect::<Vec<String>>().join(" "),
         repo = shlex::quote(&options.repository),
         archive = shlex::quote(&options.archive),
         paths = options.paths.join(" "),

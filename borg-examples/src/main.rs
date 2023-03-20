@@ -60,6 +60,8 @@ async fn main() {
                 "/home/omikron/git/502-bad-gateway".to_string(),
                 "/home/omikron/git/borgbackup".to_string(),
             ],
+            exclude_caches: false,
+            patterns: vec![],
         },
         &CommonOptions::default(),
         tx,
