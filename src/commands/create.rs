@@ -294,7 +294,12 @@ pub async fn create_async_progress(
                 _ => (),
             },
             result = child.wait() => {
-                if let Ok(exit_code) = result { println!("Child process exited with {exit_code}") }
+                if let Ok(exit_code) = result {
+                    debug!("Child process exited with {exit_code}");
+                    if exit_code.code().unwrap() > 1 {
+                        return Err(CreateError::Unknown);
+                    }
+                }
                 break // child process exited
             }
         }

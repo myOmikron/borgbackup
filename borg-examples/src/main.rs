@@ -4,13 +4,13 @@ use borgbackup::commands;
 use borgbackup::commands::common::{CommonOptions, CompressionMode, EncryptionMode};
 use borgbackup::commands::{CreateOptions, CreateProgress, InitOptions};
 use byte_unit::Byte;
-use log::{debug, error, info};
+use log::{error, info};
 use tempfile::tempdir;
 use tokio::sync::mpsc;
 
 #[tokio::main]
 async fn main() {
-    env::set_var("RUST_LOG", "trace");
+    env::set_var("RUST_LOG", "info");
     env_logger::init();
 
     let dir = tempdir().unwrap();
