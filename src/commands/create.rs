@@ -1,6 +1,8 @@
 use std::fmt::{Display, Formatter};
 use std::io::BufRead;
-use std::process::{Command, Stdio};
+use std::process::Command;
+#[cfg(feature = "tokio")]
+use std::process::Stdio;
 use std::{env, io};
 
 use log::{debug, error, info, trace, warn};
