@@ -1,5 +1,7 @@
 //! The logging definitions
 
+use std::fmt::{Display, Formatter};
+
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
@@ -222,4 +224,61 @@ pub enum MessageId {
     /// Object with key {} not found in repository {}.
     #[serde(rename = "Repository.ObjectNotFound")]
     RepositoryObjectNotFound,
+}
+
+impl Display for MessageId {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            MessageId::ArchiveAlreadyExists => write!(f, "Archive.AlreadyExists"),
+            MessageId::ArchiveDoesNotExist => write!(f, "Archive.DoesNotExist"),
+            MessageId::ArchiveIncompatibleFilesystemEncodingError => {
+                write!(f, "Archive.IncompatibleFilesystemEncodingError")
+            }
+            MessageId::CacheCacheInitAbortedError => write!(f, "Cache.CacheInitAbortedError"),
+            MessageId::CacheEncryptionMethodMismatch => write!(f, "Cache.EncryptionMethodMismatch"),
+            MessageId::CacheRepositoryAccessAborted => write!(f, "Cache.RepositoryAccessAborted"),
+            MessageId::CacheRepositoryIDNotUnique => write!(f, "Cache.RepositoryIDNotUnique"),
+            MessageId::CacheRepositoryReplay => write!(f, "Cache.RepositoryReplay"),
+            MessageId::BufferMemoryLimitExceeded => write!(f, "Buffer.MemoryLimitExceeded"),
+            MessageId::ExtensionModuleError => write!(f, "ExtensionModuleError"),
+            MessageId::IntegrityError => write!(f, "IntegrityError"),
+            MessageId::NoManifestError => write!(f, "NoManifestError"),
+            MessageId::PlaceholderError => write!(f, "PlaceholderError"),
+            MessageId::KeyfileInvalidError => write!(f, "KeyfileInvalidError"),
+            MessageId::KeyfileMismatchError => write!(f, "KeyfileMismatchError"),
+            MessageId::KeyfileNotFoundError => write!(f, "KeyfileNotFoundError"),
+            MessageId::PassphraseWrong => write!(f, "PassphraseWrong"),
+            MessageId::PasswordRetriesExceeded => write!(f, "PasswordRetriesExceeded"),
+            MessageId::RepoKeyNotFoundError => write!(f, "RepoKeyNotFoundError"),
+            MessageId::UnsupportedManifestError => write!(f, "UnsupportedManifestError"),
+            MessageId::UnsupportedPayloadError => write!(f, "UnsupportedPayloadError"),
+            MessageId::NotABorgKeyFile => write!(f, "NotABorgKeyFile"),
+            MessageId::RepoIdMismatch => write!(f, "RepoIdMismatch"),
+            MessageId::UnencryptedRepo => write!(f, "UnencryptedRepo"),
+            MessageId::UnknownKeyType => write!(f, "UnknownKeyType"),
+            MessageId::LockError => write!(f, "LockError"),
+            MessageId::LockErrorT => write!(f, "LockErrorT"),
+            MessageId::ConnectionClosed => write!(f, "ConnectionClosed"),
+            MessageId::InvalidRPCMethod => write!(f, "InvalidRPCMethod"),
+            MessageId::PathNotAllowed => write!(f, "PathNotAllowed"),
+            MessageId::RemoteRepositoryRPCServerOutdated => {
+                write!(f, "RemoteRepository.RPCServerOutdated")
+            }
+            MessageId::UnexpectedRPCDataFormatFromClient => {
+                write!(f, "UnexpectedRPCDataFormatFromClient")
+            }
+            MessageId::UnexpectedRPCDataFormatFromServer => {
+                write!(f, "UnexpectedRPCDataFormatFromServer")
+            }
+            MessageId::RepositoryAlreadyExists => write!(f, "Repository.AlreadyExists"),
+            MessageId::RepositoryCheckNeeded => write!(f, "Repository.CheckNeeded"),
+            MessageId::RepositoryDoesNotExist => write!(f, "Repository.DoesNotExist"),
+            MessageId::RepositoryInsufficientFreeSpaceError => {
+                write!(f, "Repository.InsufficientFreeSpaceError")
+            }
+            MessageId::RepositoryInvalidRepository => write!(f, "Repository.InvalidRepository"),
+            MessageId::RepositoryAtticRepository => write!(f, "Repository.AtticRepository"),
+            MessageId::RepositoryObjectNotFound => write!(f, "Repository.ObjectNotFound"),
+        }
+    }
 }
