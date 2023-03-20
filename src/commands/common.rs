@@ -48,6 +48,20 @@ pub enum EncryptionMode {
     KeyfileBlake2(String),
 }
 
+impl EncryptionMode {
+    pub(crate) fn get_passphrase(&self) -> Option<&str> {
+        match self {
+            EncryptionMode::None => None,
+            EncryptionMode::Authenticated(x) => Some(x),
+            EncryptionMode::AuthenticatedBlake2(x) => Some(x),
+            EncryptionMode::Repokey(x) => Some(x),
+            EncryptionMode::Keyfile(x) => Some(x),
+            EncryptionMode::RepokeyBlake2(x) => Some(x),
+            EncryptionMode::KeyfileBlake2(x) => Some(x),
+        }
+    }
+}
+
 impl Display for EncryptionMode {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {

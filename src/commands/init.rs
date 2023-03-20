@@ -1,6 +1,6 @@
 use std::fmt::{Display, Formatter};
 use std::io::BufRead;
-use std::process::Command;
+use std::process::{Command, Output};
 use std::{env, io};
 
 use log::{debug, error, info, trace, warn};
@@ -53,15 +53,8 @@ impl InitOptions {
     }
 }
 
-/// The entry point for the borg init command
-///
-/// **Parameter**:
-/// - `options`: Reference to [InitOptions]
-/// - `common_options`: The [CommonOptions] that can be applied to any command
-pub fn init(options: &InitOptions, common_options: &CommonOptions) -> Result<(), InitError> {
-    let local_path = common_options.local_path.as_ref().map_or("borg", |x| x);
-
-    let args = format!(
+fn fmt_args(options: &InitOptions, common_options: &CommonOptions) -> String {
+    format!(
         "--log-json {common_options}init -e {e}{append_only}{make_parent_dirs}{storage_quota} {repository}",
         e = options.encryption_mode,
         append_only = if options.append_only {
@@ -82,33 +75,10 @@ pub fn init(options: &InitOptions, common_options: &CommonOptions) -> Result<(),
                 quota = shlex::quote(x)
             )),
         repository = shlex::quote(&options.repository),
-    );
+    )
+}
 
-    let passphrase = match &options.encryption_mode {
-        EncryptionMode::None => None,
-        EncryptionMode::Authenticated(x) => Some(x),
-        EncryptionMode::AuthenticatedBlake2(x) => Some(x),
-        EncryptionMode::Repokey(x) => Some(x),
-        EncryptionMode::Keyfile(x) => Some(x),
-        EncryptionMode::RepokeyBlake2(x) => Some(x),
-        EncryptionMode::KeyfileBlake2(x) => Some(x),
-    };
-
-    if let Some(passphrase) = passphrase {
-        trace!("Set BORG_PASSPHRASE environment variable");
-        env::set_var("BORG_PASSPHRASE", passphrase);
-    }
-
-    debug!("Calling borg: {local_path} {args}");
-
-    let args = shlex::split(&args).ok_or(InitError::ShlexError)?;
-    let res = Command::new(local_path).args(args).output()?;
-
-    if passphrase.is_some() {
-        trace!("Clearing BORG_PASSPHRASE environment variable");
-        env::remove_var("BORG_PASSPHRASE");
-    }
-
+fn parse_result(res: Output) -> Result<(), InitError> {
     let Some(exit_code) = res.status.code() else {
         warn!("borg process was terminated by signal");
         return Err(InitError::TerminatedBySignal);
@@ -161,6 +131,77 @@ pub fn init(options: &InitOptions, common_options: &CommonOptions) -> Result<(),
     if exit_code != 0 {
         return Err(InitError::Unknown);
     }
+
+    Ok(())
+}
+
+/// The entry point for the borg init command
+///
+/// **Parameter**:
+/// - `options`: Reference to [InitOptions]
+/// - `common_options`: The [CommonOptions] that can be applied to any command
+#[cfg(feature = "tokio")]
+pub fn init(options: &InitOptions, common_options: &CommonOptions) -> Result<(), InitError> {
+    let local_path = common_options.local_path.as_ref().map_or("borg", |x| x);
+
+    let args = fmt_args(options, common_options);
+    let passphrase = options.encryption_mode.get_passphrase();
+
+    if let Some(passphrase) = passphrase {
+        trace!("Set BORG_PASSPHRASE environment variable");
+        env::set_var("BORG_PASSPHRASE", passphrase);
+    }
+
+    debug!("Calling borg: {local_path} {args}");
+
+    let args = shlex::split(&args).ok_or(InitError::ShlexError)?;
+    let res = Command::new(local_path).args(args).output()?;
+
+    if passphrase.is_some() {
+        trace!("Clearing BORG_PASSPHRASE environment variable");
+        env::remove_var("BORG_PASSPHRASE");
+    }
+
+    parse_result(res)?;
+
+    info!("Repository {} created", options.repository);
+
+    Ok(())
+}
+
+/// The entry point for the borg init command
+///
+/// **Parameter**:
+/// - `options`: Reference to [InitOptions]
+/// - `common_options`: The [CommonOptions] that can be applied to any command
+#[cfg(feature = "tokio")]
+pub async fn init_async(
+    options: &InitOptions,
+    common_options: &CommonOptions,
+) -> Result<(), InitError> {
+    let local_path = common_options.local_path.as_ref().map_or("borg", |x| x);
+
+    let args = fmt_args(options, common_options);
+    let passphrase = options.encryption_mode.get_passphrase();
+
+    if let Some(passphrase) = passphrase {
+        trace!("Set BORG_PASSPHRASE environment variable");
+        env::set_var("BORG_PASSPHRASE", passphrase);
+    }
+
+    debug!("Calling borg: {local_path} {args}");
+    let args = shlex::split(&args).ok_or(InitError::ShlexError)?;
+    let res = tokio::process::Command::new(local_path)
+        .args(args)
+        .output()
+        .await?;
+
+    if passphrase.is_some() {
+        trace!("Clearing BORG_PASSPHRASE environment variable");
+        env::remove_var("BORG_PASSPHRASE");
+    }
+
+    parse_result(res)?;
 
     info!("Repository {} created", options.repository);
 
