@@ -4,5 +4,9 @@
 #![warn(missing_docs)]
 #![cfg_attr(all(doc, CHANNEL_NIGHTLY), feature(doc_auto_cfg))]
 
-pub mod commands;
+#[cfg(feature = "tokio")]
+pub mod asynchronous;
+pub mod common;
+pub mod errors;
 pub mod output;
+pub mod sync;
