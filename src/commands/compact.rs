@@ -82,7 +82,7 @@ fn parse_output(res: Output) -> Result<(), CompactError> {
 /// invoke it from the client or also from the server.
 ///
 /// **Parameter**:
-/// - `options`: Reference to [CreateOptions]
+/// - `options`: Reference to [CompactOptions]
 /// - `common_options`: Reference to [CommonOptions]
 pub fn compact(
     options: &CompactOptions,
@@ -112,7 +112,7 @@ pub fn compact(
 /// invoke it from the client or also from the server.
 ///
 /// **Parameter**:
-/// - `options`: Reference to [CreateOptions]
+/// - `options`: Reference to [CompactOptions]
 /// - `common_options`: Reference to [CommonOptions]
 #[cfg(feature = "tokio")]
 pub async fn compact_async(
