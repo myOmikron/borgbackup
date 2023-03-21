@@ -5,7 +5,7 @@ pub use compact::compact_async;
 pub use compact::{compact, CompactError, CompactOptions};
 pub use create::{create, CreateError, CreateOptions};
 #[cfg(feature = "tokio")]
-pub use create::{create_async_progress, CreateProgress};
+pub use create::{create_async, create_async_progress, CreateProgress};
 #[cfg(feature = "tokio")]
 pub use init::init_async;
 pub use init::{init, InitError, InitOptions};
