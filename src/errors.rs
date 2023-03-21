@@ -5,7 +5,7 @@ use std::io;
 
 use crate::output::logging::MessageId;
 
-/// The errors that can be returned from [compact]
+/// The errors that can be returned from [crate::sync::compact]
 #[derive(Debug)]
 pub enum CompactError {
     /// An unknown error occurred
@@ -57,7 +57,7 @@ impl From<serde_json::Error> for CompactError {
     }
 }
 
-/// The errors that can be returned from [prune]
+/// The errors that can be returned from [crate::sync::prune]
 #[derive(Debug)]
 pub enum PruneError {
     /// An unknown error occurred
@@ -114,7 +114,7 @@ impl From<serde_json::Error> for PruneError {
     }
 }
 
-/// The errors that can be returned from [list]
+/// The errors that can be returned from [crate::sync::list]
 #[derive(Debug)]
 pub enum ListError {
     /// An unknown error occurred
@@ -166,7 +166,7 @@ impl From<serde_json::Error> for ListError {
     }
 }
 
-/// The possible errors that can get returned from [init]
+/// The possible errors that can get returned from [crate::sync::init]
 #[derive(Debug)]
 pub enum InitError {
     /// Error while splitting the arguments

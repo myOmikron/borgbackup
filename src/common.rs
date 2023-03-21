@@ -324,7 +324,7 @@ impl Display for PruneWithin {
     }
 }
 
-/// Options for [prune]
+/// Options for [crate::sync::prune]
 ///
 /// A good procedure is to thin out more and more the older your backups get.
 /// As an example, `keep_daily` 7 means to keep the latest backup on each day, up to 7 most
@@ -349,7 +349,7 @@ pub struct PruneOptions {
     pub repository: String,
     /// The passphrase for the repository
     ///
-    /// If using a repository with [crate::commands::common::EncryptionMode::None],
+    /// If using a repository with [EncryptionMode::None],
     /// you can leave this option empty
     pub passphrase: Option<String>,
     /// The archives kept with this option do not count towards the totals specified
@@ -373,7 +373,7 @@ pub struct PruneOptions {
     pub checkpoint_interval: Option<NonZeroU16>,
     /// only consider archive names matching the glob.
     ///
-    /// The pattern can use [crate::commands::common::Pattern::Shell]
+    /// The pattern can use [Pattern::Shell]
     pub glob_archives: Option<String>,
 }
 
@@ -397,7 +397,7 @@ impl PruneOptions {
     }
 }
 
-/// Options for [compact]
+/// Options for [crate::sync::compact]
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct CompactOptions {
     /// Path to the repository
@@ -433,7 +433,7 @@ pub struct CreateOptions {
     pub archive: String,
     /// The passphrase for the repository
     ///
-    /// If using a repository with [crate::commands::common::EncryptionMode::None],
+    /// If using a repository with [EncryptionMode::None],
     /// you can leave this option empty
     pub passphrase: Option<String>,
     /// Add a comment text to the archive
@@ -511,7 +511,7 @@ impl CreateOptions {
     }
 }
 
-/// The options to provide to the init command
+/// The options to provide to the [crate::sync::init] command
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct InitOptions {
     /// Path to the repository
@@ -555,7 +555,7 @@ impl InitOptions {
     }
 }
 
-/// The options for the [list] command
+/// The options for the [crate::sync::list] command
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct ListOptions {
     /// Path to the repository
@@ -567,7 +567,7 @@ pub struct ListOptions {
     pub repository: String,
     /// The passphrase for the repository
     ///
-    /// If using a repository with [crate::commands::common::EncryptionMode::None],
+    /// If using a repository with [EncryptionMode::None],
     /// you can leave this option empty
     pub passphrase: Option<String>,
 }
