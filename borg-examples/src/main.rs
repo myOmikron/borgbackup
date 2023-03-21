@@ -1,8 +1,12 @@
 use std::env;
+use std::num::NonZeroU16;
 
-use borgbackup::commands;
-use borgbackup::commands::common::{CommonOptions, CompressionMode, EncryptionMode};
-use borgbackup::commands::{CreateOptions, CreateProgress, InitOptions};
+use borgbackup::asynchronous::{compact, create, create_progress, list, prune, CreateProgress};
+use borgbackup::common::{
+    CommonOptions, CompactOptions, CompressionMode, CreateOptions, EncryptionMode, InitOptions,
+    ListOptions, PruneOptions,
+};
+use borgbackup::sync;
 use byte_unit::Byte;
 use log::{error, info};
 use tempfile::tempdir;
@@ -18,7 +22,7 @@ async fn main() {
     let repo = format!("{} 123", dir.path().display());
     let passphrase = "awd".to_string();
 
-    let res = commands::init(
+    let res = sync::init(
         &InitOptions::new(repo.clone(), EncryptionMode::Repokey(passphrase.clone())),
         &CommonOptions::default(),
     );
@@ -49,11 +53,11 @@ async fn main() {
         }
     });
 
-    let create = commands::create_async_progress(
+    let stats = create_progress(
         &CreateOptions {
-            repository: repo,
+            repository: repo.clone(),
             archive: "archive 123".to_string(),
-            passphrase: Some(passphrase),
+            passphrase: Some(passphrase.clone()),
             comment: None,
             compression: Some(CompressionMode::Zstd(3)),
             paths: vec![
@@ -76,10 +80,87 @@ async fn main() {
     .await
     .unwrap();
 
+    let out = list(
+        &ListOptions {
+            repository: repo.clone(),
+            passphrase: Some(passphrase.clone()),
+        },
+        &CommonOptions::default(),
+    )
+    .await
+    .unwrap();
+
+    info!("{out:#?}");
+
+    prune(
+        &PruneOptions {
+            repository: repo.clone(),
+            passphrase: Some(passphrase.clone()),
+            keep_within: None,
+            keep_secondly: Some(NonZeroU16::try_from(1).unwrap()),
+            keep_minutely: None,
+            keep_hourly: None,
+            keep_daily: None,
+            keep_weekly: None,
+            keep_monthly: None,
+            keep_yearly: None,
+            checkpoint_interval: None,
+            glob_archives: None,
+        },
+        &CommonOptions::default(),
+    )
+    .await
+    .unwrap();
+
+    create(
+        &CreateOptions {
+            repository: repo.clone(),
+            archive: "archive 321".to_string(),
+            passphrase: Some(passphrase.clone()),
+            comment: None,
+            compression: Some(CompressionMode::Zstd(3)),
+            paths: vec![
+                "/home/omikron/git/502-bad-gateway".to_string(),
+                "/home/omikron/git/borgbackup".to_string(),
+            ],
+            exclude_caches: false,
+            patterns: vec![],
+            excludes: vec![],
+            numeric_ids: false,
+            sparse: false,
+            read_special: false,
+            no_xattrs: false,
+            no_acls: false,
+            no_flags: false,
+        },
+        &CommonOptions::default(),
+    )
+    .await
+    .unwrap();
+
+    let out = list(
+        &ListOptions {
+            repository: repo.clone(),
+            passphrase: Some(passphrase.clone()),
+        },
+        &CommonOptions::default(),
+    )
+    .await
+    .unwrap();
+
+    info!("{out:#?}");
+
+    compact(
+        &CompactOptions { repository: repo },
+        &CommonOptions::default(),
+    )
+    .await
+    .unwrap();
+
     println!(
         "Original: {}, Deduplicated: {}",
-        Byte::from_bytes(create.archive.stats.original_size as u128).get_appropriate_unit(true),
-        Byte::from_bytes(create.archive.stats.deduplicated_size as u128).get_appropriate_unit(true)
+        Byte::from_bytes(stats.archive.stats.original_size as u128).get_appropriate_unit(true),
+        Byte::from_bytes(stats.archive.stats.deduplicated_size as u128).get_appropriate_unit(true)
     );
 
     dir.close().unwrap();
