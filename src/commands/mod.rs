@@ -10,6 +10,9 @@ pub use create::{create_async, create_async_progress, CreateProgress};
 pub use init::init_async;
 pub use init::{init, InitError, InitOptions};
 #[cfg(feature = "tokio")]
+pub use list::list_async;
+pub use list::{list, ListError, ListOptions};
+#[cfg(feature = "tokio")]
 pub use prune::prune_async;
 pub use prune::{prune, PruneError, PruneOptions, PruneWithin, PruneWithinTime};
 
@@ -17,4 +20,5 @@ pub mod common;
 mod compact;
 mod create;
 mod init;
+mod list;
 mod prune;
