@@ -11,7 +11,6 @@ use crate::output::list::ListRepository;
 /// **Parameter**:
 /// - `options`: Reference to [ListOptions]
 /// - `common_options`: The [CommonOptions] that can be applied to any command
-#[cfg(feature = "tokio")]
 pub async fn list(
     options: &ListOptions,
     common_options: &CommonOptions,
