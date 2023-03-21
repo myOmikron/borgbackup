@@ -53,7 +53,7 @@ impl Display for PruneWithin {
     }
 }
 
-/// Options for [prune] and [borg_async].
+/// Options for [prune]
 ///
 /// A good procedure is to thin out more and more the older your backups get.
 /// As an example, `keep_daily` 7 means to keep the latest backup on each day, up to 7 most
@@ -252,7 +252,7 @@ pub async fn prune_async(
     Ok(())
 }
 
-/// The errors that can be returned from [prune] and [prune_async]
+/// The errors that can be returned from [prune]
 #[derive(Debug)]
 pub enum PruneError {
     /// An unknown error occurred
