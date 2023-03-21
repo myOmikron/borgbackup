@@ -114,6 +114,7 @@ pub fn compact(
 /// **Parameter**:
 /// - `options`: Reference to [CreateOptions]
 /// - `common_options`: Reference to [CommonOptions]
+#[cfg(feature = "tokio")]
 pub async fn compact_async(
     options: &CompactOptions,
     common_options: &CommonOptions,
