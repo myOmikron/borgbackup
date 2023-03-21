@@ -78,10 +78,8 @@ async fn main() {
 
     println!(
         "Original: {}, Deduplicated: {}",
-        byte_unit::Byte::from_bytes(create.archive.stats.original_size as u128)
-            .get_appropriate_unit(true),
-        byte_unit::Byte::from_bytes(create.archive.stats.deduplicated_size as u128)
-            .get_appropriate_unit(true)
+        Byte::from_bytes(create.archive.stats.original_size as u128).get_appropriate_unit(true),
+        Byte::from_bytes(create.archive.stats.deduplicated_size as u128).get_appropriate_unit(true)
     );
 
     dir.close().unwrap();
