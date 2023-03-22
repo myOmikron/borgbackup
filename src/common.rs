@@ -463,10 +463,20 @@ pub struct CreateOptions {
     /// borg create --pattern=+pics/2018/good --pattern=-pics/2018 repo::arch pics
     /// ```
     pub patterns: Vec<PatternInstruction>,
+    /// read include/exclude patterns from the given path, one per line
+    ///
+    /// Refer to <https://borgbackup.readthedocs.io/en/stable/usage/help.html#borg-help-patterns>
+    /// for further information how to use pattern / exclude files.
+    pub pattern_file: Option<String>,
     /// Exclude paths matching PATTERN.
     ///
     /// See [Pattern] for further information.
     pub excludes: Vec<Pattern>,
+    /// read exclude patterns from the given path, one per line
+    ///
+    /// Refer to <https://borgbackup.readthedocs.io/en/stable/usage/help.html#borg-help-patterns>
+    /// for further information how to use pattern / exclude files.
+    pub exclude_file: Option<String>,
     /// Only store numeric user and group identifiers
     pub numeric_ids: bool,
     /// Detect sparse holes in input (supported only by fixed chunker)
@@ -500,7 +510,9 @@ impl CreateOptions {
             paths,
             exclude_caches: false,
             patterns,
+            pattern_file: None,
             excludes: vec![],
+            exclude_file: None,
             numeric_ids: false,
             sparse: false,
             read_special: false,
@@ -773,7 +785,7 @@ pub(crate) fn create_fmt_args(
     progress: bool,
 ) -> String {
     format!(
-        "--log-json{p} {common_options}create --json{comment}{compression}{num_ids}{sparse}{read_special}{no_xattr}{no_acls}{no_flags}{ex_caches}{patterns}{excludes} {repo}::{archive} {paths}",
+        "--log-json{p} {common_options}create --json{comment}{compression}{num_ids}{sparse}{read_special}{no_xattr}{no_acls}{no_flags}{ex_caches}{patterns}{excludes}{pattern_file}{exclude_file} {repo}::{archive} {paths}",
         p = if progress { " --progress" } else { "" },
         comment = options.comment.as_ref().map_or("".to_string(), |x| format!(
             " --comment {}",
@@ -795,6 +807,14 @@ pub(crate) fn create_fmt_args(
             " --exclude={}",
             shlex::quote(&x.to_string()),
         )).collect::<Vec<String>>().join(" "),
+        pattern_file = options.pattern_file.as_ref().map_or(
+            "".to_string(),
+            |x| format!(" --patterns-from {}", shlex::quote(x)),
+        ),
+        exclude_file = options.exclude_file.as_ref().map_or(
+            "".to_string(),
+            |x| format!(" --exclude-from {}", shlex::quote(x)),
+        ),
         repo = shlex::quote(&options.repository),
         archive = shlex::quote(&options.archive),
         paths = options.paths.join(" "),
