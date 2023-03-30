@@ -133,6 +133,8 @@ pub enum ListError {
     PipeFailed,
     /// An unexpected message id was received
     UnexpectedMessageId(MessageId),
+    /// The specified repository does not exist
+    RepositoryDoesNotExist,
 }
 
 impl Display for ListError {
@@ -150,6 +152,7 @@ impl Display for ListError {
             ListError::UnexpectedMessageId(x) => {
                 write!(f, "An unexpected message id was received: {x}")
             }
+            ListError::RepositoryDoesNotExist => write!(f, "The repository does not exist"),
         }
     }
 }
