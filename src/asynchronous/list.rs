@@ -37,7 +37,7 @@ pub async fn list(
 
     let list_repo = list_parse_output(res)?;
 
-    info!("Finished pruning");
+    info!("Finished listing repository");
 
     Ok(list_repo)
 }
