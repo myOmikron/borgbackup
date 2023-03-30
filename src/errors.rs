@@ -135,6 +135,8 @@ pub enum ListError {
     UnexpectedMessageId(MessageId),
     /// The specified repository does not exist
     RepositoryDoesNotExist,
+    /// The provided passphrase was incorrect
+    PassphraseWrong,
 }
 
 impl Display for ListError {
@@ -153,6 +155,7 @@ impl Display for ListError {
                 write!(f, "An unexpected message id was received: {x}")
             }
             ListError::RepositoryDoesNotExist => write!(f, "The repository does not exist"),
+            ListError::PassphraseWrong => write!(f, "The provided passphrase was incorrect"),
         }
     }
 }

@@ -762,12 +762,18 @@ pub(crate) fn list_parse_output(res: Output) -> Result<ListRepository, ListError
             }
 
             if let Some(msg_id) = msg_id {
-                if let MessageId::RepositoryDoesNotExist = msg_id {
-                    return Err(ListError::RepositoryDoesNotExist);
-                }
-
-                if exit_code > 1 {
-                    return Err(ListError::UnexpectedMessageId(msg_id));
+                match msg_id {
+                    MessageId::RepositoryDoesNotExist => {
+                        return Err(ListError::RepositoryDoesNotExist);
+                    }
+                    MessageId::PassphraseWrong => {
+                        return Err(ListError::PassphraseWrong);
+                    }
+                    _ => {
+                        if exit_code > 1 {
+                            return Err(ListError::UnexpectedMessageId(msg_id));
+                        }
+                    }
                 }
             }
         }
