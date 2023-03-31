@@ -243,6 +243,8 @@ pub enum CreateError {
     ArchiveAlreadyExists,
     /// An unexpected message id was received
     UnexpectedMessageId(MessageId),
+    /// The provided passphrase was incorrect
+    PassphraseWrong,
 }
 
 impl Display for CreateError {
@@ -263,6 +265,7 @@ impl Display for CreateError {
             CreateError::UnexpectedMessageId(x) => {
                 write!(f, "An unexpected message id was received: {x}")
             }
+            CreateError::PassphraseWrong => write!(f, "The provided passphrase was incorrect"),
         }
     }
 }

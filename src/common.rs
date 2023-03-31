@@ -865,6 +865,9 @@ pub(crate) fn create_parse_output(res: Output) -> Result<Create, CreateError> {
                     MessageId::ArchiveAlreadyExists => {
                         return Err(CreateError::ArchiveAlreadyExists)
                     }
+                    MessageId::PassphraseWrong => {
+                        return Err(CreateError::PassphraseWrong);
+                    }
                     _ => {
                         if exit_code > 1 {
                             return Err(CreateError::UnexpectedMessageId(msg_id));
