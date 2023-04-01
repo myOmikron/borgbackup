@@ -1,5 +1,5 @@
 use std::env;
-use std::fmt::{Display, Formatter};
+use std::fmt::{Display, Formatter, Write};
 use std::process::Stdio;
 
 use log::{debug, error, info, trace, warn};
@@ -129,10 +129,13 @@ pub async fn create_progress(
 
     let mut stderr_reader = BufReader::new(stderr).lines();
 
+    let mut output = String::new();
+
     loop {
         tokio::select! {
             result = stderr_reader.next_line() => match result {
                 Ok(Some(line)) => {
+                    writeln!(output, "{line}").unwrap();
                     let res: LoggingMessage = serde_json::from_str(&line)?;
 
                     if let LoggingMessage::ArchiveProgress {
@@ -190,7 +193,7 @@ pub async fn create_progress(
                 if let Ok(exit_code) = result {
                     debug!("Child process exited with {exit_code}");
                     if exit_code.code().unwrap() > 1 {
-                        return Err(CreateError::Unknown);
+                        return Err(CreateError::Unknown(output));
                     }
                 }
                 break // child process exited

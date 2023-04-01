@@ -1,6 +1,6 @@
 //! The common options of borg commands are defined here
 
-use std::fmt::{Display, Formatter};
+use std::fmt::{Display, Formatter, Write};
 use std::io::BufRead;
 use std::num::NonZeroU16;
 use std::process::Output;
@@ -609,14 +609,27 @@ pub(crate) fn init_fmt_args(options: &InitOptions, common_options: &CommonOption
     )
 }
 
+fn log_message(level_name: LevelName, time: f64, name: String, message: String) {
+    match level_name {
+        LevelName::Debug => debug!("{time} {name}: {message}"),
+        LevelName::Info => info!("{time} {name}: {message}"),
+        LevelName::Warning => warn!("{time} {name}: {message}"),
+        LevelName::Error => error!("{time} {name}: {message}"),
+        LevelName::Critical => error!("{time} {name}: {message}"),
+    }
+}
+
 pub(crate) fn init_parse_result(res: Output) -> Result<(), InitError> {
     let Some(exit_code) = res.status.code() else {
         warn!("borg process was terminated by signal");
         return Err(InitError::TerminatedBySignal);
     };
 
+    let mut output = String::new();
+
     for line in res.stderr.lines() {
         let line = line.map_err(InitError::InvalidBorgOutput)?;
+        writeln!(output, "{line}").unwrap();
 
         trace!("borg output: {line}");
 
@@ -630,13 +643,7 @@ pub(crate) fn init_parse_result(res: Output) -> Result<(), InitError> {
             msg_id,
         } = log_msg
         {
-            match level_name {
-                LevelName::Debug => debug!("{time} {name}: {message}"),
-                LevelName::Info => info!("{time} {name}: {message}"),
-                LevelName::Warning => warn!("{time} {name}: {message}"),
-                LevelName::Error => error!("{time} {name}: {message}"),
-                LevelName::Critical => error!("{time} {name}: {message}"),
-            }
+            log_message(level_name, time, name, message);
 
             if let Some(msg_id) = msg_id {
                 match msg_id {
@@ -659,8 +666,8 @@ pub(crate) fn init_parse_result(res: Output) -> Result<(), InitError> {
         }
     }
 
-    if exit_code != 0 {
-        return Err(InitError::Unknown);
+    if exit_code > 1 {
+        return Err(InitError::Unknown(output));
     }
 
     Ok(())
@@ -687,8 +694,11 @@ pub(crate) fn prune_parse_output(res: Output) -> Result<(), PruneError> {
         return Err(PruneError::TerminatedBySignal);
     };
 
+    let mut output = String::new();
+
     for line in BufRead::lines(res.stderr.as_slice()) {
         let line = line.map_err(PruneError::InvalidBorgOutput)?;
+        writeln!(output, "{line}").unwrap();
 
         trace!("borg output: {line}");
 
@@ -702,13 +712,7 @@ pub(crate) fn prune_parse_output(res: Output) -> Result<(), PruneError> {
             msg_id,
         } = log_msg
         {
-            match level_name {
-                LevelName::Debug => debug!("{time} {name}: {message}"),
-                LevelName::Info => info!("{time} {name}: {message}"),
-                LevelName::Warning => warn!("{time} {name}: {message}"),
-                LevelName::Error => error!("{time} {name}: {message}"),
-                LevelName::Critical => error!("{time} {name}: {message}"),
-            }
+            log_message(level_name, time, name, message);
 
             if let Some(msg_id) = msg_id {
                 if exit_code > 1 {
@@ -718,8 +722,8 @@ pub(crate) fn prune_parse_output(res: Output) -> Result<(), PruneError> {
         }
     }
 
-    if exit_code != 0 {
-        return Err(PruneError::Unknown);
+    if exit_code > 1 {
+        return Err(PruneError::Unknown(output));
     }
 
     Ok(())
@@ -738,8 +742,11 @@ pub(crate) fn list_parse_output(res: Output) -> Result<ListRepository, ListError
         return Err(ListError::TerminatedBySignal);
     };
 
+    let mut output = String::new();
+
     for line in BufRead::lines(res.stderr.as_slice()) {
         let line = line.map_err(ListError::InvalidBorgOutput)?;
+        writeln!(output, "{line}").unwrap();
 
         trace!("borg output: {line}");
 
@@ -753,13 +760,7 @@ pub(crate) fn list_parse_output(res: Output) -> Result<ListRepository, ListError
             msg_id,
         } = log_msg
         {
-            match level_name {
-                LevelName::Debug => debug!("{time} {name}: {message}"),
-                LevelName::Info => info!("{time} {name}: {message}"),
-                LevelName::Warning => warn!("{time} {name}: {message}"),
-                LevelName::Error => error!("{time} {name}: {message}"),
-                LevelName::Critical => error!("{time} {name}: {message}"),
-            }
+            log_message(level_name, time, name, message);
 
             if let Some(msg_id) = msg_id {
                 match msg_id {
@@ -779,8 +780,8 @@ pub(crate) fn list_parse_output(res: Output) -> Result<ListRepository, ListError
         }
     }
 
-    if exit_code != 0 {
-        return Err(ListError::Unknown);
+    if exit_code > 1 {
+        return Err(ListError::Unknown(output));
     }
 
     trace!("Parsing output");
@@ -837,8 +838,11 @@ pub(crate) fn create_parse_output(res: Output) -> Result<Create, CreateError> {
         return Err(CreateError::TerminatedBySignal);
     };
 
+    let mut output = String::new();
+
     for line in BufRead::lines(res.stderr.as_slice()) {
         let line = line.map_err(CreateError::InvalidBorgOutput)?;
+        writeln!(output, "{line}").unwrap();
 
         trace!("borg output: {line}");
 
@@ -852,13 +856,7 @@ pub(crate) fn create_parse_output(res: Output) -> Result<Create, CreateError> {
             msg_id,
         } = log_msg
         {
-            match level_name {
-                LevelName::Debug => debug!("{time} {name}: {message}"),
-                LevelName::Info => info!("{time} {name}: {message}"),
-                LevelName::Warning => warn!("{time} {name}: {message}"),
-                LevelName::Error => error!("{time} {name}: {message}"),
-                LevelName::Critical => error!("{time} {name}: {message}"),
-            }
+            log_message(level_name, time, name, message);
 
             if let Some(msg_id) = msg_id {
                 match msg_id {
@@ -878,8 +876,8 @@ pub(crate) fn create_parse_output(res: Output) -> Result<Create, CreateError> {
         }
     }
 
-    if exit_code != 0 {
-        return Err(CreateError::Unknown);
+    if exit_code > 1 {
+        return Err(CreateError::Unknown(output));
     }
 
     trace!("Parsing stats");
@@ -901,8 +899,11 @@ pub(crate) fn compact_parse_output(res: Output) -> Result<(), CompactError> {
         return Err(CompactError::TerminatedBySignal);
     };
 
+    let mut output = String::new();
+
     for line in BufRead::lines(res.stderr.as_slice()) {
         let line = line.map_err(CompactError::InvalidBorgOutput)?;
+        writeln!(output, "{line}").unwrap();
 
         trace!("borg output: {line}");
 
@@ -916,13 +917,7 @@ pub(crate) fn compact_parse_output(res: Output) -> Result<(), CompactError> {
             msg_id,
         } = log_msg
         {
-            match level_name {
-                LevelName::Debug => debug!("{time} {name}: {message}"),
-                LevelName::Info => info!("{time} {name}: {message}"),
-                LevelName::Warning => warn!("{time} {name}: {message}"),
-                LevelName::Error => error!("{time} {name}: {message}"),
-                LevelName::Critical => error!("{time} {name}: {message}"),
-            }
+            log_message(level_name, time, name, message);
 
             if let Some(msg_id) = msg_id {
                 if exit_code > 1 {
@@ -932,8 +927,8 @@ pub(crate) fn compact_parse_output(res: Output) -> Result<(), CompactError> {
         }
     }
 
-    if exit_code != 0 {
-        return Err(CompactError::Unknown);
+    if exit_code > 1 {
+        return Err(CompactError::Unknown(output));
     }
 
     Ok(())

@@ -9,7 +9,7 @@ use crate::output::logging::MessageId;
 #[derive(Debug)]
 pub enum CompactError {
     /// An unknown error occurred
-    Unknown,
+    Unknown(String),
     /// Error while splitting the arguments
     ShlexError,
     /// The command failed to execute
@@ -29,7 +29,7 @@ pub enum CompactError {
 impl Display for CompactError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            CompactError::Unknown => write!(f, "Unknown error occurred"),
+            CompactError::Unknown(output) => write!(f, "Unknown error occurred: {output}"),
             CompactError::ShlexError => write!(f, "error while splitting the arguments"),
             CompactError::CommandFailed(err) => write!(f, "The command failed to execute: {err}"),
             CompactError::InvalidBorgOutput(err) => write!(f, "Could not read borg output: {err}"),
@@ -61,7 +61,7 @@ impl From<serde_json::Error> for CompactError {
 #[derive(Debug)]
 pub enum PruneError {
     /// An unknown error occurred
-    Unknown,
+    Unknown(String),
     /// Error while splitting the arguments
     ShlexError,
     /// The command failed to execute
@@ -83,7 +83,7 @@ pub enum PruneError {
 impl Display for PruneError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            PruneError::Unknown => write!(f, "Unknown error occurred"),
+            PruneError::Unknown(output) => write!(f, "Unknown error occurred: {output}"),
             PruneError::ShlexError => write!(f, "error while splitting the arguments"),
             PruneError::CommandFailed(err) => write!(f, "The command failed to execute: {err}"),
             PruneError::InvalidBorgOutput(err) => write!(f, "Could not read borg output: {err}"),
@@ -118,7 +118,7 @@ impl From<serde_json::Error> for PruneError {
 #[derive(Debug)]
 pub enum ListError {
     /// An unknown error occurred
-    Unknown,
+    Unknown(String),
     /// Error while splitting the arguments
     ShlexError,
     /// The command failed to execute
@@ -142,7 +142,7 @@ pub enum ListError {
 impl Display for ListError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            ListError::Unknown => write!(f, "Unknown error occurred"),
+            ListError::Unknown(output) => write!(f, "Unknown error occurred: {output}"),
             ListError::ShlexError => write!(f, "error while splitting the arguments"),
             ListError::CommandFailed(err) => write!(f, "The command failed to execute: {err}"),
             ListError::InvalidBorgOutput(err) => write!(f, "Could not read borg output: {err}"),
@@ -190,7 +190,7 @@ pub enum InitError {
     /// An unexpected message id was received
     UnexpectedMessageId(MessageId),
     /// Unknown error occurred
-    Unknown,
+    Unknown(String),
 }
 
 impl Display for InitError {
@@ -203,7 +203,7 @@ impl Display for InitError {
                 write!(f, "Error while deserializing borg output: {err}")
             }
             InitError::TerminatedBySignal => write!(f, "Borg was terminated by a signal"),
-            InitError::Unknown => write!(f, "Unknown error occurred"),
+            InitError::Unknown(output) => write!(f, "Unknown error occurred: {output}"),
             InitError::RepositoryAlreadyExists => write!(f, "Repository already exists"),
             InitError::UnexpectedMessageId(err) => write!(f, "Unexpected msg_id received: {err}"),
         }
@@ -226,7 +226,7 @@ impl From<serde_json::Error> for InitError {
 #[derive(Debug)]
 pub enum CreateError {
     /// An unknown error occurred
-    Unknown,
+    Unknown(String),
     /// Error while splitting the arguments
     ShlexError,
     /// The command failed to execute
@@ -250,7 +250,7 @@ pub enum CreateError {
 impl Display for CreateError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            CreateError::Unknown => write!(f, "Unknown error occurred"),
+            CreateError::Unknown(output) => write!(f, "Unknown error occurred: {output}"),
             CreateError::ShlexError => write!(f, "error while splitting the arguments"),
             CreateError::CommandFailed(err) => write!(f, "The command failed to execute: {err}"),
             CreateError::InvalidBorgOutput(err) => write!(f, "Could not read borg output: {err}"),
