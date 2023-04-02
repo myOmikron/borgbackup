@@ -1,11 +1,9 @@
-use std::env;
-use std::process::Command;
-
-use log::{debug, info, trace};
+use log::{debug, info};
 
 use crate::common::{create_fmt_args, create_parse_output, CommonOptions, CreateOptions};
 use crate::errors::CreateError;
 use crate::output::create::Create;
+use crate::sync::execute_borg;
 
 /// This command creates a backup archive containing all files found
 /// while recursively traversing all paths specified.
@@ -21,20 +19,10 @@ pub fn create(
 ) -> Result<Create, CreateError> {
     let local_path = common_options.local_path.as_ref().map_or("borg", |x| x);
 
-    if let Some(passphrase) = &options.passphrase {
-        trace!("Set BORG_PASSPHRASE environment variable");
-        env::set_var("BORG_PASSPHRASE", passphrase);
-    }
-
     let args = create_fmt_args(options, common_options, false);
     debug!("Calling borg: {local_path} {args}");
     let args = shlex::split(&args).ok_or(CreateError::ShlexError)?;
-    let res = Command::new(local_path).args(args).output()?;
-
-    if options.passphrase.is_some() {
-        trace!("Clearing BORG_PASSPHRASE environment variable");
-        env::remove_var("BORG_PASSPHRASE");
-    }
+    let res = execute_borg(local_path, args, &options.passphrase)?;
 
     let stats = create_parse_output(res)?;
 

@@ -1,10 +1,8 @@
-use std::env;
-use std::process::Command;
-
-use log::{debug, info, trace};
+use log::{debug, info};
 
 use crate::common::{init_fmt_args, init_parse_result, CommonOptions, InitOptions};
 use crate::errors::InitError;
+use crate::sync::execute_borg;
 
 /// The entry point for the borg init command
 ///
@@ -17,20 +15,10 @@ pub fn init(options: &InitOptions, common_options: &CommonOptions) -> Result<(),
     let args = init_fmt_args(options, common_options);
     let passphrase = options.encryption_mode.get_passphrase();
 
-    if let Some(passphrase) = passphrase {
-        trace!("Set BORG_PASSPHRASE environment variable");
-        env::set_var("BORG_PASSPHRASE", passphrase);
-    }
-
     debug!("Calling borg: {local_path} {args}");
 
     let args = shlex::split(&args).ok_or(InitError::ShlexError)?;
-    let res = Command::new(local_path).args(args).output()?;
-
-    if passphrase.is_some() {
-        trace!("Clearing BORG_PASSPHRASE environment variable");
-        env::remove_var("BORG_PASSPHRASE");
-    }
+    let res = execute_borg(local_path, args, &passphrase)?;
 
     init_parse_result(res)?;
 

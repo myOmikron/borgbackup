@@ -1,7 +1,6 @@
-use std::env;
+use log::{debug, info};
 
-use log::{debug, info, trace};
-
+use crate::asynchronous::execute_borg;
 use crate::common::{init_fmt_args, init_parse_result, CommonOptions, InitOptions};
 use crate::errors::InitError;
 
@@ -16,22 +15,9 @@ pub async fn init(options: &InitOptions, common_options: &CommonOptions) -> Resu
     let args = init_fmt_args(options, common_options);
     let passphrase = options.encryption_mode.get_passphrase();
 
-    if let Some(passphrase) = passphrase {
-        trace!("Set BORG_PASSPHRASE environment variable");
-        env::set_var("BORG_PASSPHRASE", passphrase);
-    }
-
     debug!("Calling borg: {local_path} {args}");
     let args = shlex::split(&args).ok_or(InitError::ShlexError)?;
-    let res = tokio::process::Command::new(local_path)
-        .args(args)
-        .output()
-        .await?;
-
-    if passphrase.is_some() {
-        trace!("Clearing BORG_PASSPHRASE environment variable");
-        env::remove_var("BORG_PASSPHRASE");
-    }
+    let res = execute_borg(local_path, args, &passphrase).await?;
 
     init_parse_result(res)?;
 

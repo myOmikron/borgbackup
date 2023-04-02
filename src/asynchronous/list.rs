@@ -1,7 +1,6 @@
-use std::env;
+use log::{debug, info};
 
-use log::{debug, info, trace};
-
+use crate::asynchronous::execute_borg;
 use crate::common::{list_fmt_args, list_parse_output, CommonOptions, ListOptions};
 use crate::errors::ListError;
 use crate::output::list::ListRepository;
@@ -17,23 +16,10 @@ pub async fn list(
 ) -> Result<ListRepository, ListError> {
     let local_path = common_options.local_path.as_ref().map_or("borg", |x| x);
 
-    if let Some(passphrase) = &options.passphrase {
-        trace!("Set BORG_PASSPHRASE environment variable");
-        env::set_var("BORG_PASSPHRASE", passphrase);
-    }
-
     let args = list_fmt_args(options, common_options);
     debug!("Calling borg: {local_path} {args}");
     let args = shlex::split(&args).ok_or(ListError::ShlexError)?;
-    let res = tokio::process::Command::new(local_path)
-        .args(args)
-        .output()
-        .await?;
-
-    if options.passphrase.is_some() {
-        trace!("Clearing BORG_PASSPHRASE environment variable");
-        env::remove_var("BORG_PASSPHRASE");
-    }
+    let res = execute_borg(local_path, args, &options.passphrase).await?;
 
     let list_repo = list_parse_output(res)?;
 

@@ -221,15 +221,15 @@ pub enum EncryptionMode {
 }
 
 impl EncryptionMode {
-    pub(crate) fn get_passphrase(&self) -> Option<&str> {
+    pub(crate) fn get_passphrase(&self) -> Option<String> {
         match self {
             EncryptionMode::None => None,
-            EncryptionMode::Authenticated(x) => Some(x),
-            EncryptionMode::AuthenticatedBlake2(x) => Some(x),
-            EncryptionMode::Repokey(x) => Some(x),
-            EncryptionMode::Keyfile(x) => Some(x),
-            EncryptionMode::RepokeyBlake2(x) => Some(x),
-            EncryptionMode::KeyfileBlake2(x) => Some(x),
+            EncryptionMode::Authenticated(x) => Some(x.clone()),
+            EncryptionMode::AuthenticatedBlake2(x) => Some(x.clone()),
+            EncryptionMode::Repokey(x) => Some(x.clone()),
+            EncryptionMode::Keyfile(x) => Some(x.clone()),
+            EncryptionMode::RepokeyBlake2(x) => Some(x.clone()),
+            EncryptionMode::KeyfileBlake2(x) => Some(x.clone()),
         }
     }
 }

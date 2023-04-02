@@ -1,4 +1,3 @@
-use std::env;
 use std::fmt::{Display, Formatter, Write};
 use std::process::Stdio;
 
@@ -6,6 +5,7 @@ use log::{debug, error, info, trace, warn};
 use serde::{Deserialize, Serialize};
 use tokio::io::{AsyncBufReadExt, AsyncReadExt, BufReader};
 
+use crate::asynchronous::execute_borg;
 use crate::common::{create_fmt_args, create_parse_output, CommonOptions, CreateOptions};
 use crate::errors::CreateError;
 use crate::output::create::Create;
@@ -25,23 +25,10 @@ pub async fn create(
 ) -> Result<Create, CreateError> {
     let local_path = common_options.local_path.as_ref().map_or("borg", |x| x);
 
-    if let Some(passphrase) = &options.passphrase {
-        trace!("Set BORG_PASSPHRASE environment variable");
-        env::set_var("BORG_PASSPHRASE", passphrase);
-    }
-
     let args = create_fmt_args(options, common_options, false);
     debug!("Calling borg: {local_path} {args}");
     let args = shlex::split(&args).ok_or(CreateError::ShlexError)?;
-    let res = tokio::process::Command::new(local_path)
-        .args(args)
-        .output()
-        .await?;
-
-    if options.passphrase.is_some() {
-        trace!("Clearing BORG_PASSPHRASE environment variable");
-        env::remove_var("BORG_PASSPHRASE");
-    }
+    let res = execute_borg(local_path, args, &options.passphrase).await?;
 
     let stats = create_parse_output(res)?;
 
@@ -109,20 +96,25 @@ pub async fn create_progress(
 ) -> Result<Create, CreateError> {
     let local_path = common_options.local_path.as_ref().map_or("borg", |x| x);
 
-    if let Some(passphrase) = &options.passphrase {
-        trace!("Set BORG_PASSPHRASE environment variable");
-        env::set_var("BORG_PASSPHRASE", passphrase);
-    }
-
     let args = create_fmt_args(options, common_options, true);
     debug!("Calling borg: {local_path} {args}");
     let args = shlex::split(&args).ok_or(CreateError::ShlexError)?;
-    let mut child = tokio::process::Command::new(local_path)
-        .args(args)
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .kill_on_drop(true)
-        .spawn()?;
+    let mut child = if let Some(passphrase) = &options.passphrase {
+        tokio::process::Command::new(local_path)
+            .env("BORG_PASSPHRASE", passphrase)
+            .args(args)
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .kill_on_drop(true)
+            .spawn()?
+    } else {
+        tokio::process::Command::new(local_path)
+            .args(args)
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .kill_on_drop(true)
+            .spawn()?
+    };
 
     let mut stdout = child.stdout.take().ok_or(CreateError::PipeFailed)?;
     let stderr = child.stderr.take().ok_or(CreateError::PipeFailed)?;
@@ -199,11 +191,6 @@ pub async fn create_progress(
                 break // child process exited
             }
         }
-    }
-
-    if options.passphrase.is_some() {
-        trace!("Clearing BORG_PASSPHRASE environment variable");
-        env::remove_var("BORG_PASSPHRASE");
     }
 
     let mut stdout_str = String::new();
