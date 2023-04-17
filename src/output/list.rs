@@ -9,11 +9,11 @@ use crate::output::common::{Encryption, Repository};
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ListRepository {
     /// Information about the repository
-    repository: Repository,
+    pub repository: Repository,
     /// Information about the encryption of the repository
-    encryption: Option<Encryption>,
+    pub encryption: Option<Encryption>,
     /// Information about the archives in the repository
-    archives: Vec<ListArchive>,
+    pub archives: Vec<ListArchive>,
 }
 
 /// The short output version of the archive
