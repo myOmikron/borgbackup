@@ -679,11 +679,11 @@ pub(crate) fn prune_fmt_args(options: &PruneOptions, common_options: &CommonOpti
         keep_within = options.keep_within.as_ref().map_or("".to_string(), |x| format!(" --keep-within {x}")),
         keep_secondly = options.keep_secondly.as_ref().map_or("".to_string(), |x| format!(" --keep-secondly {x}")),
         keep_minutely = options.keep_minutely.map_or("".to_string(), |x| format!(" --keep-minutely {x}")),
-        keep_hourly = options.keep_minutely.map_or("".to_string(), |x| format!(" --keep-hourly {x}")),
-        keep_daily = options.keep_minutely.map_or("".to_string(), |x| format!(" --keep-daily {x}")),
-        keep_weekly = options.keep_minutely.map_or("".to_string(), |x| format!(" --keep-weekly {x}")),
-        keep_monthly = options.keep_minutely.map_or("".to_string(), |x| format!(" --keep-monthly {x}")),
-        keep_yearly = options.keep_minutely.map_or("".to_string(), |x| format!(" --keep-yearly {x}")),
+        keep_hourly = options.keep_hourly.map_or("".to_string(), |x| format!(" --keep-hourly {x}")),
+        keep_daily = options.keep_daily.map_or("".to_string(), |x| format!(" --keep-daily {x}")),
+        keep_weekly = options.keep_weekly.map_or("".to_string(), |x| format!(" --keep-weekly {x}")),
+        keep_monthly = options.keep_monthly.map_or("".to_string(), |x| format!(" --keep-monthly {x}")),
+        keep_yearly = options.keep_yearly.map_or("".to_string(), |x| format!(" --keep-yearly {x}")),
         repository = shlex::quote(&options.repository)
     )
 }
@@ -932,4 +932,24 @@ pub(crate) fn compact_parse_output(res: Output) -> Result<(), CompactError> {
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use std::num::NonZeroU16;
+
+    use crate::common::{prune_fmt_args, CommonOptions, PruneOptions};
+    #[test]
+    fn test_prune_fmt_args() {
+        let mut prune_option = PruneOptions::new("prune_option_repo".to_string());
+        prune_option.keep_secondly = NonZeroU16::new(1);
+        prune_option.keep_minutely = NonZeroU16::new(2);
+        prune_option.keep_hourly = NonZeroU16::new(3);
+        prune_option.keep_daily = NonZeroU16::new(4);
+        prune_option.keep_weekly = NonZeroU16::new(5);
+        prune_option.keep_monthly = NonZeroU16::new(6);
+        prune_option.keep_yearly = NonZeroU16::new(7);
+        let args = prune_fmt_args(&prune_option, &CommonOptions::default());
+        assert_eq!("--log-json  prune --keep-secondly 1 --keep-minutely 2 --keep-hourly 3 --keep-daily 4 --keep-weekly 5 --keep-monthly 6 --keep-yearly 7 prune_option_repo", args);
+    }
 }
