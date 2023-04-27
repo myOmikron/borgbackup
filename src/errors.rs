@@ -114,6 +114,63 @@ impl From<serde_json::Error> for PruneError {
     }
 }
 
+/// The errors that can be returned from [crate::sync::mount]
+#[derive(Debug)]
+pub enum MountError {
+    /// An unknown error occurred
+    Unknown(String),
+    /// Error while splitting the arguments
+    ShlexError,
+    /// The command failed to execute
+    CommandFailed(io::Error),
+    /// Invalid borg output found
+    InvalidBorgOutput(io::Error),
+    /// Error while deserializing output of borg
+    DeserializeError(serde_json::Error),
+    /// Borg was terminated by a signal
+    TerminatedBySignal,
+    /// Piping from stdout or stderr failed
+    PipeFailed,
+    /// The specified archive name already exists
+    ArchiveAlreadyExists,
+    /// An unexpected message id was received
+    UnexpectedMessageId(MessageId),
+}
+
+impl Display for MountError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            MountError::Unknown(output) => write!(f, "Unknown error occurred: {output}"),
+            MountError::ShlexError => write!(f, "error while splitting the arguments"),
+            MountError::CommandFailed(err) => write!(f, "The command failed to execute: {err}"),
+            MountError::InvalidBorgOutput(err) => write!(f, "Could not read borg output: {err}"),
+            MountError::DeserializeError(err) => {
+                write!(f, "Error while deserializing borg output: {err}")
+            }
+            MountError::TerminatedBySignal => write!(f, "Borg was terminated by a signal"),
+            MountError::PipeFailed => write!(f, "Piping from stdout or stderr failed"),
+            MountError::ArchiveAlreadyExists => {
+                write!(f, "The specified archive name already exists")
+            }
+            MountError::UnexpectedMessageId(x) => {
+                write!(f, "An unexpected message id was received: {x}")
+            }
+        }
+    }
+}
+
+impl From<io::Error> for MountError {
+    fn from(value: io::Error) -> Self {
+        Self::CommandFailed(value)
+    }
+}
+
+impl From<serde_json::Error> for MountError {
+    fn from(value: serde_json::Error) -> Self {
+        Self::DeserializeError(value)
+    }
+}
+
 /// The errors that can be returned from [crate::sync::list]
 #[derive(Debug)]
 pub enum ListError {

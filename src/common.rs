@@ -8,7 +8,7 @@ use std::process::Output;
 use log::{debug, error, info, trace, warn};
 use serde::{Deserialize, Serialize};
 
-use crate::errors::{CompactError, CreateError, InitError, ListError, PruneError};
+use crate::errors::{CompactError, CreateError, InitError, ListError, MountError, PruneError};
 use crate::output::create::Create;
 use crate::output::list::ListRepository;
 use crate::output::logging::{LevelName, LoggingMessage, MessageId};
@@ -397,6 +397,52 @@ impl PruneOptions {
     }
 }
 
+/// Options for [crate::sync::mount]
+///
+/// Mount an archive or repository as a FUSE filesystem. This is useful for
+/// browsing archives or repositories and interactive restoration.
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct MountOptions {
+    /// Path to the repository or archive
+    ///
+    /// Example values:
+    /// - `/tmp/foo`
+    /// - `/tmp/foo::my-archive`
+    /// - `user@example.com:/opt/repo`
+    /// - `user@example.com:/opt/repo::archive`
+    /// - `ssh://user@example.com:2323:/opt/repo`
+    pub repository_or_archive: String,
+    /// The path where the repo or archive will be mounted.
+    ///
+    /// Example values:
+    /// - `/mnt/my-borg-backup`
+    pub mountpoint: String,
+    /// The passphrase for the repository
+    ///
+    /// If using a repository with [EncryptionMode::None],
+    /// you can leave this option empty
+    pub passphrase: Option<String>,
+    /// Paths to extract. If left empty all paths will be present. Useful
+    /// for whitelisting certain paths in the backup.
+    ///
+    /// Example values:
+    /// - `/a/path/I/actually/care/about`
+    /// - `**/some/intermediate/folder/*`
+    pub select_paths: Vec<Pattern>,
+}
+
+impl MountOptions {
+    /// Create an new [MountOptions]
+    pub fn new(repository_or_archive: String, mountpoint: String) -> Self {
+        Self {
+            repository_or_archive,
+            mountpoint,
+            passphrase: None,
+            select_paths: vec![],
+        }
+    }
+}
+
 /// Options for [crate::sync::compact]
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct CompactOptions {
@@ -729,6 +775,60 @@ pub(crate) fn prune_parse_output(res: Output) -> Result<(), PruneError> {
     Ok(())
 }
 
+pub(crate) fn mount_fmt_args(options: &MountOptions, common_options: &CommonOptions) -> String {
+    format!(
+        "--log-json {common_options} mount {repository_or_archive} {mountpoint}{select_paths}",
+        repository_or_archive = options.repository_or_archive,
+        mountpoint = options.mountpoint,
+        select_paths = options
+            .select_paths
+            .iter()
+            .map(|x| format!(" --pattern={}", shlex::quote(&x.to_string()),))
+            .collect::<Vec<String>>()
+            .join(" "),
+    )
+}
+
+pub(crate) fn mount_parse_output(res: Output) -> Result<(), MountError> {
+    let Some(exit_code) = res.status.code() else {
+        warn!("borg process was terminated by signal");
+        return Err(MountError::TerminatedBySignal);
+    };
+
+    let mut output = String::new();
+
+    for line in BufRead::lines(res.stderr.as_slice()) {
+        let line = line.map_err(MountError::InvalidBorgOutput)?;
+        writeln!(output, "{line}").unwrap();
+
+        trace!("borg output: {line}");
+
+        let log_msg: LoggingMessage = serde_json::from_str(&line)?;
+
+        if let LoggingMessage::LogMessage {
+            name,
+            message,
+            level_name,
+            time,
+            msg_id,
+        } = log_msg
+        {
+            log_message(level_name, time, name, message);
+
+            if let Some(msg_id) = msg_id {
+                if exit_code > 1 {
+                    return Err(MountError::UnexpectedMessageId(msg_id));
+                }
+            }
+        }
+    }
+
+    if exit_code > 1 {
+        return Err(MountError::Unknown(output));
+    }
+    Ok(())
+}
+
 pub(crate) fn list_fmt_args(options: &ListOptions, common_options: &CommonOptions) -> String {
     format!(
         "--log-json {common_options} list --json {repository}",
@@ -938,7 +1038,9 @@ pub(crate) fn compact_parse_output(res: Output) -> Result<(), CompactError> {
 mod tests {
     use std::num::NonZeroU16;
 
-    use crate::common::{prune_fmt_args, CommonOptions, PruneOptions};
+    use crate::common::{
+        mount_fmt_args, prune_fmt_args, CommonOptions, MountOptions, Pattern, PruneOptions,
+    };
     #[test]
     fn test_prune_fmt_args() {
         let mut prune_option = PruneOptions::new("prune_option_repo".to_string());
@@ -951,5 +1053,31 @@ mod tests {
         prune_option.keep_yearly = NonZeroU16::new(7);
         let args = prune_fmt_args(&prune_option, &CommonOptions::default());
         assert_eq!("--log-json  prune --keep-secondly 1 --keep-minutely 2 --keep-hourly 3 --keep-daily 4 --keep-weekly 5 --keep-monthly 6 --keep-yearly 7 prune_option_repo", args);
+    }
+    #[test]
+    fn test_mount_fmt_args() {
+        let mount_option = MountOptions::new(
+            String::from("/tmp/borg-repo::archive"),
+            String::from("/mnt/borg-mount"),
+        );
+        let args = mount_fmt_args(&mount_option, &CommonOptions::default());
+        assert_eq!(
+            "--log-json  mount /tmp/borg-repo::archive /mnt/borg-mount",
+            args
+        );
+    }
+    #[test]
+    fn test_mount_fmt_args_patterns() {
+        let mut mount_option =
+            MountOptions::new(String::from("/my-borg-repo"), String::from("/borg-mount"));
+        mount_option.select_paths = vec![
+            Pattern::Shell("**/test/*".to_string()),
+            Pattern::Regex("^[A-Z]{3}".to_string()),
+        ];
+        let args = mount_fmt_args(&mount_option, &CommonOptions::default());
+        assert_eq!(
+            "--log-json  mount /my-borg-repo /borg-mount --pattern=\"sh:**/test/*\"  --pattern=\"re:^[A-Z]{3}\"",
+            args
+        );
     }
 }

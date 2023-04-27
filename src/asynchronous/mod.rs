@@ -7,12 +7,14 @@ pub use compact::compact;
 pub use create::{create, create_progress, CreateProgress};
 pub use init::init;
 pub use list::list;
+pub use mount::{mount, umount};
 pub use prune::prune;
 
 mod compact;
 mod create;
 mod init;
 mod list;
+mod mount;
 mod prune;
 
 pub(crate) async fn execute_borg(
