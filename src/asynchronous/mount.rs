@@ -22,7 +22,7 @@ pub async fn mount(
 
     mount_parse_output(res)?;
 
-    info!("Finished pruning");
+    info!("Finished mounting");
 
     Ok(())
 }
@@ -40,7 +40,7 @@ pub async fn umount(mountpoint: String, common_options: &CommonOptions) -> Resul
 
     mount_parse_output(res)?;
 
-    info!("Finished pruning");
+    info!("Finished mounting");
 
     Ok(())
 }

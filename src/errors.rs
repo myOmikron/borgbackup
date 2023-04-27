@@ -131,8 +131,6 @@ pub enum MountError {
     TerminatedBySignal,
     /// Piping from stdout or stderr failed
     PipeFailed,
-    /// The specified archive name already exists
-    ArchiveAlreadyExists,
     /// An unexpected message id was received
     UnexpectedMessageId(MessageId),
 }
@@ -149,9 +147,6 @@ impl Display for MountError {
             }
             MountError::TerminatedBySignal => write!(f, "Borg was terminated by a signal"),
             MountError::PipeFailed => write!(f, "Piping from stdout or stderr failed"),
-            MountError::ArchiveAlreadyExists => {
-                write!(f, "The specified archive name already exists")
-            }
             MountError::UnexpectedMessageId(x) => {
                 write!(f, "An unexpected message id was received: {x}")
             }

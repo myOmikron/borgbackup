@@ -402,16 +402,43 @@ impl PruneOptions {
 /// Mount an archive or repository as a FUSE filesystem. This is useful for
 /// browsing archives or repositories and interactive restoration.
 #[derive(Serialize, Deserialize, Debug, Clone)]
+pub enum MountSource {
+    /// Mount a repository
+    Repository {
+        /// Name of the repository you wish to mount
+        ///
+        /// Example values:
+        /// - `/tmp/foo`
+        /// - `user@example.com:/opt/repo`
+        /// - `ssh://user@example.com:2323:/opt/repo`
+        name: String,
+        /// Obtain the first N archives
+        first_n_archives: Option<NonZeroU16>,
+        /// Obtain the last N archives
+        last_n_archives: Option<NonZeroU16>,
+        /// only consider archive names matching the glob.
+        glob_archives: Option<String>,
+    },
+    /// Mount an archive (repo_name::archive_name)
+    Archive {
+        /// Path to the borg archive you wish to mount
+        ///
+        /// Example values:
+        /// - `/tmp/foo::my-archive`
+        /// - `user@example.com:/opt/repo::archive`
+        /// - `ssh://user@example.com:2323:/opt/repo`
+        archive_name: String,
+    },
+}
+
+/// Options for [crate::sync::mount]
+///
+/// Mount an archive or repository as a FUSE filesystem. This is useful for
+/// browsing archives or repositories and interactive restoration.
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct MountOptions {
-    /// Path to the repository or archive
-    ///
-    /// Example values:
-    /// - `/tmp/foo`
-    /// - `/tmp/foo::my-archive`
-    /// - `user@example.com:/opt/repo`
-    /// - `user@example.com:/opt/repo::archive`
-    /// - `ssh://user@example.com:2323:/opt/repo`
-    pub repository_or_archive: String,
+    /// The archive or repo you wish to mount
+    pub mount_source: MountSource,
     /// The path where the repo or archive will be mounted.
     ///
     /// Example values:
@@ -433,9 +460,9 @@ pub struct MountOptions {
 
 impl MountOptions {
     /// Create an new [MountOptions]
-    pub fn new(repository_or_archive: String, mountpoint: String) -> Self {
+    pub fn new(mount_source: MountSource, mountpoint: String) -> Self {
         Self {
-            repository_or_archive,
+            mount_source,
             mountpoint,
             passphrase: None,
             select_paths: vec![],
@@ -776,9 +803,33 @@ pub(crate) fn prune_parse_output(res: Output) -> Result<(), PruneError> {
 }
 
 pub(crate) fn mount_fmt_args(options: &MountOptions, common_options: &CommonOptions) -> String {
+    let mount_source_formatted = match &options.mount_source {
+        MountSource::Repository {
+            name,
+            first_n_archives,
+            last_n_archives,
+            glob_archives,
+        } => {
+            format!(
+                "{name}{first_n_archives}{last_n_archives}{glob_archives}",
+                name = name.clone(),
+                first_n_archives = first_n_archives
+                    .map(|first_n| format!(" --first {}", first_n))
+                    .unwrap_or_default(),
+                last_n_archives = last_n_archives
+                    .map(|last_n| format!(" --last {}", last_n))
+                    .unwrap_or_default(),
+                glob_archives = glob_archives
+                    .as_ref()
+                    .map(|glob| format!(" --glob-archives {}", glob))
+                    .unwrap_or_default(),
+            )
+        }
+        MountSource::Archive { archive_name } => archive_name.clone(),
+    };
     format!(
-        "--log-json {common_options} mount {repository_or_archive} {mountpoint}{select_paths}",
-        repository_or_archive = options.repository_or_archive,
+        "--log-json {common_options} mount {mount_source} {mountpoint}{select_paths}",
+        mount_source = mount_source_formatted,
         mountpoint = options.mountpoint,
         select_paths = options
             .select_paths
@@ -1039,7 +1090,8 @@ mod tests {
     use std::num::NonZeroU16;
 
     use crate::common::{
-        mount_fmt_args, prune_fmt_args, CommonOptions, MountOptions, Pattern, PruneOptions,
+        mount_fmt_args, prune_fmt_args, CommonOptions, MountOptions, MountSource, Pattern,
+        PruneOptions,
     };
     #[test]
     fn test_prune_fmt_args() {
@@ -1057,7 +1109,9 @@ mod tests {
     #[test]
     fn test_mount_fmt_args() {
         let mount_option = MountOptions::new(
-            String::from("/tmp/borg-repo::archive"),
+            MountSource::Archive {
+                archive_name: "/tmp/borg-repo::archive".to_string(),
+            },
             String::from("/mnt/borg-mount"),
         );
         let args = mount_fmt_args(&mount_option, &CommonOptions::default());
@@ -1068,8 +1122,12 @@ mod tests {
     }
     #[test]
     fn test_mount_fmt_args_patterns() {
-        let mut mount_option =
-            MountOptions::new(String::from("/my-borg-repo"), String::from("/borg-mount"));
+        let mut mount_option = MountOptions::new(
+            MountSource::Archive {
+                archive_name: "/my-borg-repo".to_string(),
+            },
+            String::from("/borg-mount"),
+        );
         mount_option.select_paths = vec![
             Pattern::Shell("**/test/*".to_string()),
             Pattern::Regex("^[A-Z]{3}".to_string()),
@@ -1077,6 +1135,24 @@ mod tests {
         let args = mount_fmt_args(&mount_option, &CommonOptions::default());
         assert_eq!(
             "--log-json  mount /my-borg-repo /borg-mount --pattern=\"sh:**/test/*\"  --pattern=\"re:^[A-Z]{3}\"",
+            args
+        );
+    }
+    #[test]
+    fn test_mount_fmt_args_repo() {
+        let mut mount_option = MountOptions::new(
+            MountSource::Repository {
+                name: "/my-repo".to_string(),
+                first_n_archives: Some(NonZeroU16::new(10).unwrap()),
+                last_n_archives: Some(NonZeroU16::new(5).unwrap()),
+                glob_archives: Some("archive-name*12-2022*".to_string()),
+            },
+            String::from("/borg-mount"),
+        );
+        mount_option.select_paths = vec![Pattern::Shell("**/foobar/*".to_string())];
+        let args = mount_fmt_args(&mount_option, &CommonOptions::default());
+        assert_eq!(
+            "--log-json  mount /my-repo --first 10 --last 5 --glob-archives archive-name*12-2022* /borg-mount --pattern=\"sh:**/foobar/*\"",
             args
         );
     }

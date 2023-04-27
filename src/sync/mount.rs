@@ -19,7 +19,7 @@ pub fn mount(options: &MountOptions, common_options: &CommonOptions) -> Result<(
 
     mount_parse_output(res)?;
 
-    info!("Finished pruning");
+    info!("Finished mounting");
 
     Ok(())
 }
@@ -37,7 +37,7 @@ pub fn umount(mountpoint: String, common_options: &CommonOptions) -> Result<(), 
 
     mount_parse_output(res)?;
 
-    info!("Finished pruning");
+    info!("Finished mounting");
 
     Ok(())
 }
