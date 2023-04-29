@@ -706,7 +706,7 @@ pub(crate) fn init_parse_result(res: Output) -> Result<(), InitError> {
 
         trace!("borg output: {line}");
 
-        let log_msg: LoggingMessage = serde_json::from_str(&line)?;
+        let log_msg = LoggingMessage::from_str(&line)?;
 
         if let LoggingMessage::LogMessage {
             name,
@@ -775,7 +775,7 @@ pub(crate) fn prune_parse_output(res: Output) -> Result<(), PruneError> {
 
         trace!("borg output: {line}");
 
-        let log_msg: LoggingMessage = serde_json::from_str(&line)?;
+        let log_msg = LoggingMessage::from_str(&line)?;
 
         if let LoggingMessage::LogMessage {
             name,
@@ -854,7 +854,11 @@ pub(crate) fn mount_parse_output(res: Output) -> Result<(), MountError> {
 
         trace!("borg output: {line}");
 
-        let log_msg: LoggingMessage = serde_json::from_str(&line)?;
+        let log_msg = LoggingMessage::from_str(&line)?;
+
+        if let LoggingMessage::UMountError(message) = log_msg {
+            return Err(MountError::UMountError(message));
+        };
 
         if let LoggingMessage::LogMessage {
             name,
@@ -901,7 +905,7 @@ pub(crate) fn list_parse_output(res: Output) -> Result<ListRepository, ListError
 
         trace!("borg output: {line}");
 
-        let log_msg: LoggingMessage = serde_json::from_str(&line)?;
+        let log_msg = LoggingMessage::from_str(&line)?;
 
         if let LoggingMessage::LogMessage {
             name,
@@ -997,7 +1001,7 @@ pub(crate) fn create_parse_output(res: Output) -> Result<Create, CreateError> {
 
         trace!("borg output: {line}");
 
-        let log_msg: LoggingMessage = serde_json::from_str(&line)?;
+        let log_msg = LoggingMessage::from_str(&line)?;
 
         if let LoggingMessage::LogMessage {
             name,
@@ -1058,7 +1062,7 @@ pub(crate) fn compact_parse_output(res: Output) -> Result<(), CompactError> {
 
         trace!("borg output: {line}");
 
-        let log_msg: LoggingMessage = serde_json::from_str(&line)?;
+        let log_msg = LoggingMessage::from_str(&line)?;
 
         if let LoggingMessage::LogMessage {
             name,

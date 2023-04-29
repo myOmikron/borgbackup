@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 /// All valid logging messages are defined here
-#[derive(Deserialize, Serialize, Debug, Clone)]
+#[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
 #[serde(tag = "type")]
 pub enum LoggingMessage {
     /// Any regular log output invokes this type.
@@ -100,10 +100,25 @@ pub enum LoggingMessage {
         /// only the last object for an operation can have this property set to true.
         finished: bool,
     },
+    /// Due to a bug in borg, umount failures are directly reported from
+    /// fusermount instead of being logged as json.
+    UMountError(String),
 }
 
+impl LoggingMessage {
+    /// Given a borg json log, attempt to parse it into a LogMessage
+    pub(crate) fn from_str(log_message: &str) -> Result<Self, serde_json::Error> {
+        // XXX: There's a bug in borg umount where fusermount errors are not
+        //      logged as json so we need to catch them here.
+        if log_message.starts_with("fusermount: entry for") {
+            Ok(LoggingMessage::UMountError(log_message.to_string()))
+        } else {
+            serde_json::from_str(log_message)
+        }
+    }
+}
 /// The valid loglevel of borg
-#[derive(Deserialize, Serialize, Debug, Clone, Copy)]
+#[derive(Deserialize, Serialize, Debug, Clone, Copy, PartialEq)]
 #[serde(rename_all = "UPPERCASE")]
 pub enum LevelName {
     /// Debug level
@@ -122,7 +137,7 @@ pub enum LevelName {
 /// without actually using the full text, since texts change more frequently.
 ///
 /// Message IDs are unambiguous and reduce the need to parse log messages.
-#[derive(Deserialize, Serialize, Debug, Clone, Copy)]
+#[derive(Deserialize, Serialize, Debug, Clone, Copy, PartialEq)]
 pub enum MessageId {
     /// Archive {} already exists
     #[serde(rename = "Archive.AlreadyExists")]
@@ -196,6 +211,8 @@ pub enum MessageId {
     InvalidRPCMethod,
     /// Repository path not allowed
     PathNotAllowed,
+    /// No passphrase was provided for an encrypted repository
+    NoPassphraseFailure,
     /// Borg server is too old for {}. Required version {}
     #[serde(rename = "RemoteRepository.RPCServerOutdated")]
     RemoteRepositoryRPCServerOutdated,
@@ -306,6 +323,7 @@ impl Display for MessageId {
             MessageId::ConnectionClosed => write!(f, "ConnectionClosed"),
             MessageId::InvalidRPCMethod => write!(f, "InvalidRPCMethod"),
             MessageId::PathNotAllowed => write!(f, "PathNotAllowed"),
+            MessageId::NoPassphraseFailure => write!(f, "NoPassphraseFailure"),
             MessageId::RemoteRepositoryRPCServerOutdated => {
                 write!(f, "RemoteRepository.RPCServerOutdated")
             }
@@ -340,5 +358,20 @@ impl Display for MessageId {
             MessageId::Prune => write!(f, "prune"),
             MessageId::UpgradeConvertSegments => write!(f, "upgrade.convert_segments"),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::LoggingMessage;
+
+    #[test]
+    fn test_log_message_parse_mount() {
+        let message = "fusermount: entry for /home/david/fake-directory not found in /etc/mtab";
+        let log = LoggingMessage::from_str(message);
+        assert_eq!(
+            LoggingMessage::UMountError(message.to_string()),
+            log.expect("Expected LoggingMessage::UMountError to be parsed correctly")
+        )
     }
 }

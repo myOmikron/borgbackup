@@ -132,6 +132,8 @@ pub enum MountError {
     /// Piping from stdout or stderr failed
     PipeFailed,
     /// An unexpected message id was received
+    UMountError(String),
+    /// An unexpected message id was received
     UnexpectedMessageId(MessageId),
 }
 
@@ -147,6 +149,7 @@ impl Display for MountError {
             }
             MountError::TerminatedBySignal => write!(f, "Borg was terminated by a signal"),
             MountError::PipeFailed => write!(f, "Piping from stdout or stderr failed"),
+            MountError::UMountError(message) => write!(f, "Failed to umount: {}", message),
             MountError::UnexpectedMessageId(x) => {
                 write!(f, "An unexpected message id was received: {x}")
             }
