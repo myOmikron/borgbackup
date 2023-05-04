@@ -129,8 +129,6 @@ pub enum MountError {
     DeserializeError(serde_json::Error),
     /// Borg was terminated by a signal
     TerminatedBySignal,
-    /// Piping from stdout or stderr failed
-    PipeFailed,
     /// An unexpected message id was received
     UMountError(String),
     /// An unexpected message id was received
@@ -148,7 +146,6 @@ impl Display for MountError {
                 write!(f, "Error while deserializing borg output: {err}")
             }
             MountError::TerminatedBySignal => write!(f, "Borg was terminated by a signal"),
-            MountError::PipeFailed => write!(f, "Piping from stdout or stderr failed"),
             MountError::UMountError(message) => write!(f, "Failed to umount: {}", message),
             MountError::UnexpectedMessageId(x) => {
                 write!(f, "An unexpected message id was received: {x}")
