@@ -12,7 +12,7 @@ use crate::sync::execute_borg;
 pub fn mount(options: &MountOptions, common_options: &CommonOptions) -> Result<(), MountError> {
     let local_path = common_options.local_path.as_ref().map_or("borg", |x| x);
 
-    let args = mount_fmt_args(options, common_options);
+    let args = mount_fmt_args(options, common_options).map_err(|_| MountError::ShlexError)?;
     debug!("Calling borg: {local_path} {args}");
     let args = shlex::split(&args).ok_or(MountError::ShlexError)?;
     let res = execute_borg(local_path, args, &options.passphrase)?;

@@ -7,6 +7,7 @@ use std::process::Output;
 
 use log::{debug, error, info, trace, warn};
 use serde::{Deserialize, Serialize};
+use shlex::QuoteError;
 
 use crate::errors::{CompactError, CreateError, InitError, ListError, MountError, PruneError};
 use crate::output::create::Create;
@@ -263,21 +264,25 @@ pub struct CommonOptions {
     pub rsh: Option<String>,
 }
 
-impl Display for CommonOptions {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        if let Some(rsh) = &self.rsh {
-            write!(f, "--rsh {} ", shlex::quote(rsh))?;
+impl TryFrom<&CommonOptions> for String {
+    type Error = QuoteError;
+
+    fn try_from(value: &CommonOptions) -> Result<Self, Self::Error> {
+        let mut s = String::new();
+
+        if let Some(rsh) = &value.rsh {
+            s = format!("{s} --rsh {}", shlex::try_quote(rsh)?);
         }
 
-        if let Some(remote_path) = &self.remote_path {
-            write!(f, "--remote-path {} ", shlex::quote(remote_path))?;
+        if let Some(remote_path) = &value.remote_path {
+            s = format!("{s} --remote-path {} ", shlex::try_quote(remote_path)?);
         }
 
-        if let Some(upload_ratelimit) = &self.upload_ratelimit {
-            write!(f, "--upload-ratelimit {upload_ratelimit} ")?;
+        if let Some(upload_ratelimit) = &value.upload_ratelimit {
+            s = format!("{s} --upload-ratelimit {upload_ratelimit} ");
         }
 
-        Ok(())
+        Ok(s)
     }
 }
 
@@ -657,9 +662,13 @@ pub struct ListOptions {
     pub passphrase: Option<String>,
 }
 
-pub(crate) fn init_fmt_args(options: &InitOptions, common_options: &CommonOptions) -> String {
-    format!(
+pub(crate) fn init_fmt_args(
+    options: &InitOptions,
+    common_options: &CommonOptions,
+) -> Result<String, QuoteError> {
+    Ok(format!(
         "--log-json {common_options}init -e {e}{append_only}{make_parent_dirs}{storage_quota} {repository}",
+        common_options = String::try_from(common_options)?,
         e = options.encryption_mode,
         append_only = if options.append_only {
             " --append-only"
@@ -674,12 +683,12 @@ pub(crate) fn init_fmt_args(options: &InitOptions, common_options: &CommonOption
         storage_quota = options
             .storage_quota
             .as_ref()
-            .map_or("".to_string(), |x| format!(
+            .map_or(Ok("".to_string()), |x| Ok(format!(
                 " --storage-quota {quota}",
-                quota = shlex::quote(x)
-            )),
-        repository = shlex::quote(&options.repository),
-    )
+                quota = shlex::try_quote(x)?
+            )))?,
+        repository = shlex::try_quote(&options.repository)?,
+    ))
 }
 
 fn log_message(level_name: LevelName, time: f64, name: String, message: String) {
@@ -746,9 +755,13 @@ pub(crate) fn init_parse_result(res: Output) -> Result<(), InitError> {
     Ok(())
 }
 
-pub(crate) fn prune_fmt_args(options: &PruneOptions, common_options: &CommonOptions) -> String {
-    format!(
+pub(crate) fn prune_fmt_args(
+    options: &PruneOptions,
+    common_options: &CommonOptions,
+) -> Result<String, QuoteError> {
+    Ok(format!(
         "--log-json {common_options} prune{keep_within}{keep_secondly}{keep_minutely}{keep_hourly}{keep_daily}{keep_weekly}{keep_monthly}{keep_yearly} {repository}",
+        common_options = String::try_from(common_options)?,
         keep_within = options.keep_within.as_ref().map_or("".to_string(), |x| format!(" --keep-within {x}")),
         keep_secondly = options.keep_secondly.as_ref().map_or("".to_string(), |x| format!(" --keep-secondly {x}")),
         keep_minutely = options.keep_minutely.map_or("".to_string(), |x| format!(" --keep-minutely {x}")),
@@ -757,8 +770,8 @@ pub(crate) fn prune_fmt_args(options: &PruneOptions, common_options: &CommonOpti
         keep_weekly = options.keep_weekly.map_or("".to_string(), |x| format!(" --keep-weekly {x}")),
         keep_monthly = options.keep_monthly.map_or("".to_string(), |x| format!(" --keep-monthly {x}")),
         keep_yearly = options.keep_yearly.map_or("".to_string(), |x| format!(" --keep-yearly {x}")),
-        repository = shlex::quote(&options.repository)
-    )
+        repository = shlex::try_quote(&options.repository)?
+    ))
 }
 
 pub(crate) fn prune_parse_output(res: Output) -> Result<(), PruneError> {
@@ -802,7 +815,10 @@ pub(crate) fn prune_parse_output(res: Output) -> Result<(), PruneError> {
     Ok(())
 }
 
-pub(crate) fn mount_fmt_args(options: &MountOptions, common_options: &CommonOptions) -> String {
+pub(crate) fn mount_fmt_args(
+    options: &MountOptions,
+    common_options: &CommonOptions,
+) -> Result<String, QuoteError> {
     let mount_source_formatted = match &options.mount_source {
         MountSource::Repository {
             name,
@@ -827,17 +843,18 @@ pub(crate) fn mount_fmt_args(options: &MountOptions, common_options: &CommonOpti
         }
         MountSource::Archive { archive_name } => archive_name.clone(),
     };
-    format!(
+    Ok(format!(
         "--log-json {common_options} mount {mount_source} {mountpoint}{select_paths}",
+        common_options = String::try_from(common_options)?,
         mount_source = mount_source_formatted,
         mountpoint = options.mountpoint,
         select_paths = options
             .select_paths
             .iter()
-            .map(|x| format!(" --pattern={}", shlex::quote(&x.to_string()),))
-            .collect::<Vec<String>>()
+            .map(|x| Ok(format!(" --pattern={}", shlex::try_quote(&x.to_string())?,)))
+            .collect::<Result<Vec<String>, QuoteError>>()?
             .join(" "),
-    )
+    ))
 }
 
 pub(crate) fn mount_parse_output(res: Output) -> Result<(), MountError> {
@@ -884,11 +901,15 @@ pub(crate) fn mount_parse_output(res: Output) -> Result<(), MountError> {
     Ok(())
 }
 
-pub(crate) fn list_fmt_args(options: &ListOptions, common_options: &CommonOptions) -> String {
-    format!(
+pub(crate) fn list_fmt_args(
+    options: &ListOptions,
+    common_options: &CommonOptions,
+) -> Result<String, QuoteError> {
+    Ok(format!(
         "--log-json {common_options} list --json {repository}",
-        repository = shlex::quote(&options.repository)
-    )
+        common_options = String::try_from(common_options)?,
+        repository = shlex::try_quote(&options.repository)?
+    ))
 }
 
 pub(crate) fn list_parse_output(res: Output) -> Result<ListRepository, ListError> {
@@ -949,14 +970,15 @@ pub(crate) fn create_fmt_args(
     options: &CreateOptions,
     common_options: &CommonOptions,
     progress: bool,
-) -> String {
-    format!(
+) -> Result<String, QuoteError> {
+    Ok(format!(
         "--log-json{p} {common_options}create --json{comment}{compression}{num_ids}{sparse}{read_special}{no_xattr}{no_acls}{no_flags}{ex_caches}{patterns}{excludes}{pattern_file}{exclude_file} {repo}::{archive} {paths}",
+        common_options = String::try_from(common_options)?,
         p = if progress { " --progress" } else { "" },
-        comment = options.comment.as_ref().map_or("".to_string(), |x| format!(
+        comment = options.comment.as_ref().map_or(Ok("".to_string()), |x| Ok(format!(
             " --comment {}",
-            shlex::quote(x)
-        )),
+            shlex::try_quote(x)?
+        )))?,
         compression = options.compression.as_ref().map_or("".to_string(), |x| format!(" --compression {x}")),
         num_ids = if options.numeric_ids { " --numeric-ids" } else { "" },
         sparse = if options.sparse { " --sparse" } else { "" },
@@ -965,26 +987,26 @@ pub(crate) fn create_fmt_args(
         no_acls = if options.no_acls { " --noacls" } else { "" },
         no_flags = if options.no_flags { " --noflags" } else { "" },
         ex_caches = if options.exclude_caches { " --exclude-caches" } else {""},
-        patterns = options.patterns.iter().map(|x| format!(
+        patterns = options.patterns.iter().map(|x| Ok(format!(
             " --pattern={}",
-            shlex::quote(&x.to_string()),
-        )).collect::<Vec<String>>().join(" "),
-        excludes = options.excludes.iter().map(|x| format!(
+            shlex::try_quote(&x.to_string())?,
+        ))).collect::<Result<Vec<String>, QuoteError>>()?.join(" "),
+        excludes = options.excludes.iter().map(|x| Ok(format!(
             " --exclude={}",
-            shlex::quote(&x.to_string()),
-        )).collect::<Vec<String>>().join(" "),
+            shlex::try_quote(&x.to_string())?,
+        ))).collect::<Result<Vec<String>, QuoteError>>()?.join(" "),
         pattern_file = options.pattern_file.as_ref().map_or(
-            "".to_string(),
-            |x| format!(" --patterns-from {}", shlex::quote(x)),
-        ),
+            Ok("".to_string()),
+            |x| Ok(format!(" --patterns-from {}", shlex::try_quote(x)?)),
+        )?,
         exclude_file = options.exclude_file.as_ref().map_or(
-            "".to_string(),
-            |x| format!(" --exclude-from {}", shlex::quote(x)),
-        ),
-        repo = shlex::quote(&options.repository),
-        archive = shlex::quote(&options.archive),
+            Ok("".to_string()),
+            |x| Ok(format!(" --exclude-from {}", shlex::try_quote(x)?)),
+        )?,
+        repo = shlex::try_quote(&options.repository)?,
+        archive = shlex::try_quote(&options.archive)?,
         paths = options.paths.join(" "),
-    )
+    ))
 }
 
 pub(crate) fn create_parse_output(res: Output) -> Result<Create, CreateError> {
@@ -1041,11 +1063,15 @@ pub(crate) fn create_parse_output(res: Output) -> Result<Create, CreateError> {
     Ok(stats)
 }
 
-pub(crate) fn compact_fmt_args(options: &CompactOptions, common_options: &CommonOptions) -> String {
-    format!(
+pub(crate) fn compact_fmt_args(
+    options: &CompactOptions,
+    common_options: &CommonOptions,
+) -> Result<String, QuoteError> {
+    Ok(format!(
         "--log-json {common_options}compact {repository}",
-        repository = shlex::quote(&options.repository)
-    )
+        common_options = String::try_from(common_options)?,
+        repository = shlex::try_quote(&options.repository)?
+    ))
 }
 
 pub(crate) fn compact_parse_output(res: Output) -> Result<(), CompactError> {
@@ -1107,7 +1133,7 @@ mod tests {
         prune_option.keep_weekly = NonZeroU16::new(5);
         prune_option.keep_monthly = NonZeroU16::new(6);
         prune_option.keep_yearly = NonZeroU16::new(7);
-        let args = prune_fmt_args(&prune_option, &CommonOptions::default());
+        let args = prune_fmt_args(&prune_option, &CommonOptions::default()).unwrap();
         assert_eq!("--log-json  prune --keep-secondly 1 --keep-minutely 2 --keep-hourly 3 --keep-daily 4 --keep-weekly 5 --keep-monthly 6 --keep-yearly 7 prune_option_repo", args);
     }
     #[test]

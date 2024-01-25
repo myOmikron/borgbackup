@@ -25,7 +25,8 @@ pub async fn create(
 ) -> Result<Create, CreateError> {
     let local_path = common_options.local_path.as_ref().map_or("borg", |x| x);
 
-    let args = create_fmt_args(options, common_options, false);
+    let args =
+        create_fmt_args(options, common_options, false).map_err(|_| CreateError::ShlexError)?;
     debug!("Calling borg: {local_path} {args}");
     let args = shlex::split(&args).ok_or(CreateError::ShlexError)?;
     let res = execute_borg(local_path, args, &options.passphrase).await?;
@@ -96,7 +97,8 @@ pub async fn create_progress(
 ) -> Result<Create, CreateError> {
     let local_path = common_options.local_path.as_ref().map_or("borg", |x| x);
 
-    let args = create_fmt_args(options, common_options, true);
+    let args =
+        create_fmt_args(options, common_options, true).map_err(|_| CreateError::ShlexError)?;
     debug!("Calling borg: {local_path} {args}");
     let args = shlex::split(&args).ok_or(CreateError::ShlexError)?;
     let mut child = if let Some(passphrase) = &options.passphrase {
