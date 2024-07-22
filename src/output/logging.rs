@@ -149,6 +149,8 @@ pub enum MessageId {
     /// Consider configuring the LANG environment variable.
     #[serde(rename = "Archive.IncompatibleFilesystemEncodingError")]
     ArchiveIncompatibleFilesystemEncodingError,
+    /// Obscure ENOENT error
+    BackupFileNotFoundError,
     /// Cache initialization aborted
     #[serde(rename = "Cache.CacheInitAbortedError")]
     CacheCacheInitAbortedError,
@@ -296,6 +298,7 @@ impl Display for MessageId {
             MessageId::ArchiveIncompatibleFilesystemEncodingError => {
                 write!(f, "Archive.IncompatibleFilesystemEncodingError")
             }
+            MessageId::BackupFileNotFoundError => write!(f, "BackupFileNotFoundError"),
             MessageId::CacheCacheInitAbortedError => write!(f, "Cache.CacheInitAbortedError"),
             MessageId::CacheEncryptionMethodMismatch => write!(f, "Cache.EncryptionMethodMismatch"),
             MessageId::CacheRepositoryAccessAborted => write!(f, "Cache.RepositoryAccessAborted"),
