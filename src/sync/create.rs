@@ -19,8 +19,7 @@ pub fn create(
 ) -> Result<Create, CreateError> {
     let local_path = common_options.local_path.as_ref().map_or("borg", |x| x);
 
-    let args =
-        create_fmt_args(options, common_options, false).map_err(|_| CreateError::ShlexError)?;
+    let args = create_fmt_args(options, common_options, false);
     debug!("Calling borg: {local_path} {args}");
     let args = shlex::split(&args).ok_or(CreateError::ShlexError)?;
     let res = execute_borg(local_path, args, &options.passphrase)?;
