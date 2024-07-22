@@ -12,7 +12,7 @@ use crate::errors::InitError;
 pub async fn init(options: &InitOptions, common_options: &CommonOptions) -> Result<(), InitError> {
     let local_path = common_options.local_path.as_ref().map_or("borg", |x| x);
 
-    let args = init_fmt_args(options, common_options).map_err(|_| InitError::ShlexError)?;
+    let args = init_fmt_args(options, common_options);
     let passphrase = options.encryption_mode.get_passphrase();
 
     debug!("Calling borg: {local_path} {args}");

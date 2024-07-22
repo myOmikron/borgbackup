@@ -21,7 +21,7 @@ pub async fn compact(
 ) -> Result<(), CompactError> {
     let local_path = common_options.local_path.as_ref().map_or("borg", |x| x);
 
-    let args = compact_fmt_args(options, common_options).map_err(|_| CompactError::ShlexError)?;
+    let args = compact_fmt_args(options, common_options);
     debug!("Calling borg: {local_path} {args}");
     let args = shlex::split(&args).ok_or(CompactError::ShlexError)?;
     let res = tokio::process::Command::new(local_path)
