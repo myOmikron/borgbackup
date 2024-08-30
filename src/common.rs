@@ -269,7 +269,7 @@ impl From<&CommonOptions> for String {
         let mut s = String::new();
 
         if let Some(rsh) = &value.rsh {
-            s = format!("{s} --rsh {}", shell_escape(rsh));
+            s = format!("{s} --rsh {} ", shell_escape(rsh));
         }
 
         if let Some(remote_path) = &value.remote_path {
