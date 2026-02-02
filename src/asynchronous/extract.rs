@@ -28,6 +28,29 @@ pub async fn extract(
         ))
     })?;
 
+    // Execute extraction, capturing result before cleanup
+    let result = extract_in_destination(local_path, options, common_options).await;
+
+    // Always restore original directory
+    env::set_current_dir(original_dir).map_err(|e| {
+        ExtractError::CommandFailed(std::io::Error::new(
+            std::io::ErrorKind::Other,
+            format!("Failed to restore original directory: {}", e),
+        ))
+    })?;
+
+    result?;
+
+    info!("Finished extracting archive");
+
+    Ok(())
+}
+
+async fn extract_in_destination(
+    local_path: &str,
+    options: &ExtractOptions,
+    common_options: &CommonOptions,
+) -> Result<(), ExtractError> {
     env::set_current_dir(&options.destination).map_err(|e| {
         ExtractError::CommandFailed(std::io::Error::new(
             std::io::ErrorKind::Other,
@@ -38,15 +61,8 @@ pub async fn extract(
     let args = extract_fmt_args(options, common_options);
     debug!("Calling borg: {local_path} {args}");
     let args = shlex::split(&args).ok_or(ExtractError::ShlexError)?;
-    let res = execute_borg(local_path, args, &options.passphrase).await;
-
-    // Restore original directory
-    let _ = env::set_current_dir(original_dir);
-
-    let res = res?;
+    let res = execute_borg(local_path, args, &options.passphrase).await?;
     extract_parse_output(res)?;
-
-    info!("Finished extracting archive");
 
     Ok(())
 }
