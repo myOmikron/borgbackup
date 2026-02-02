@@ -5,6 +5,7 @@ use std::process::{Command, Output};
 
 pub use compact::compact;
 pub use create::create;
+pub use extract::extract;
 pub use init::init;
 pub use list::list;
 pub use mount::{mount, umount};
@@ -12,6 +13,7 @@ pub use prune::prune;
 
 mod compact;
 mod create;
+mod extract;
 mod init;
 mod list;
 mod mount;

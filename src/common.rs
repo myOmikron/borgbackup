@@ -8,7 +8,9 @@ use std::process::Output;
 use log::{debug, error, info, trace, warn};
 use serde::{Deserialize, Serialize};
 
-use crate::errors::{CompactError, CreateError, InitError, ListError, MountError, PruneError};
+use crate::errors::{
+    CompactError, CreateError, ExtractError, InitError, ListError, MountError, PruneError,
+};
 use crate::output::create::Create;
 use crate::output::list::ListRepository;
 use crate::output::logging::{LevelName, LoggingMessage, MessageId};
@@ -660,6 +662,43 @@ pub struct ListOptions {
     pub passphrase: Option<String>,
 }
 
+/// The options for the [crate::sync::extract] command
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct ExtractOptions {
+    /// Path to the repository
+    ///
+    /// Example values:
+    /// - `/tmp/foo`
+    /// - `user@example.com:/opt/repo`
+    /// - `ssh://user@example.com:2323:/opt/repo`
+    pub repository: String,
+    /// Name of the archive to extract
+    pub archive: String,
+    /// The destination path where files will be extracted
+    pub destination: String,
+    /// The passphrase for the repository
+    ///
+    /// If using a repository with [EncryptionMode::None],
+    /// you can leave this option empty
+    pub passphrase: Option<String>,
+    /// Remove the specified number of leading path elements.
+    /// Pathnames with fewer elements will be silently skipped.
+    pub strip_components: Option<u16>,
+}
+
+impl ExtractOptions {
+    /// Create new [ExtractOptions].
+    pub fn new(repository: String, archive: String, destination: String) -> Self {
+        Self {
+            repository,
+            archive,
+            destination,
+            passphrase: None,
+            strip_components: None,
+        }
+    }
+}
+
 pub(crate) fn init_fmt_args(options: &InitOptions, common_options: &CommonOptions) -> String {
     format!(
         "--log-json {common_options}init -e {e}{append_only}{make_parent_dirs}{storage_quota} {repository}",
@@ -952,6 +991,60 @@ pub(crate) fn list_parse_output(res: Output) -> Result<ListRepository, ListError
     let list_repo: ListRepository = serde_json::from_slice(&res.stdout)?;
 
     Ok(list_repo)
+}
+
+pub(crate) fn extract_fmt_args(options: &ExtractOptions, common_options: &CommonOptions) -> String {
+    format!(
+        "--log-json {common_options} extract{strip_components} {repo}::{archive}",
+        common_options = String::from(common_options),
+        strip_components = options
+            .strip_components
+            .map(|n| format!(" --strip-components {}", n))
+            .unwrap_or_default(),
+        repo = shell_escape(&options.repository),
+        archive = shell_escape(&options.archive),
+    )
+}
+
+pub(crate) fn extract_parse_output(res: Output) -> Result<(), ExtractError> {
+    let Some(exit_code) = res.status.code() else {
+        warn!("borg process was terminated by signal");
+        return Err(ExtractError::TerminatedBySignal);
+    };
+
+    let mut output = String::new();
+
+    for line in BufRead::lines(res.stderr.as_slice()) {
+        let line = line.map_err(ExtractError::InvalidBorgOutput)?;
+        writeln!(output, "{line}").unwrap();
+
+        trace!("borg output: {line}");
+
+        let log_msg = LoggingMessage::from_str(&line)?;
+
+        if let LoggingMessage::LogMessage {
+            name,
+            message,
+            level_name,
+            time,
+            msg_id,
+        } = log_msg
+        {
+            log_message(level_name, time, name, message);
+
+            if let Some(msg_id) = msg_id {
+                if exit_code > 1 {
+                    return Err(ExtractError::UnexpectedMessageId(msg_id));
+                }
+            }
+        }
+    }
+
+    if exit_code > 1 {
+        return Err(ExtractError::Unknown(output));
+    }
+
+    Ok(())
 }
 
 pub(crate) fn create_fmt_args(

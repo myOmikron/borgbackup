@@ -96,6 +96,32 @@ pub enum MountError {
     UnexpectedMessageId(MessageId),
 }
 
+/// The errors that can be returned from [crate::sync::extract]
+#[derive(Debug, Error)]
+pub enum ExtractError {
+    /// An unknown error occurred
+    #[error("Unknown error occurred: {0}")]
+    Unknown(String),
+    /// Error while splitting the arguments
+    #[error("error while splitting the arguments")]
+    ShlexError,
+    /// The command failed to execute
+    #[error("The command failed to execute: {0}")]
+    CommandFailed(#[from] io::Error),
+    /// Invalid borg output found
+    #[error("Error while deserializing borg output: {0}")]
+    InvalidBorgOutput(io::Error),
+    /// Error while deserializing output of borg
+    #[error("Error while deserializing borg output: {0}")]
+    DeserializeError(#[from] serde_json::Error),
+    /// Borg was terminated by a signal
+    #[error("Borg was terminated by a signal")]
+    TerminatedBySignal,
+    /// An unexpected message id was received
+    #[error("An unexpected message id was received: {0}")]
+    UnexpectedMessageId(MessageId),
+}
+
 /// The errors that can be returned from [crate::sync::list]
 #[derive(Error, Debug)]
 pub enum ListError {
