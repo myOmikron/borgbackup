@@ -19,7 +19,6 @@
 //! - `tokio`: provides the [asynchronous] module
 //!
 #![warn(missing_docs)]
-#![cfg_attr(all(doc, CHANNEL_NIGHTLY), feature(doc_auto_cfg))]
 
 #[cfg(feature = "tokio")]
 pub mod asynchronous;
