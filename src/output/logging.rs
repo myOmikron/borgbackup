@@ -151,6 +151,8 @@ pub enum MessageId {
     ArchiveIncompatibleFilesystemEncodingError,
     /// Obscure ENOENT error
     BackupFileNotFoundError,
+    /// Backup failed due to a permission error
+    BackupPermissionError,
     /// Cache initialization aborted
     #[serde(rename = "Cache.CacheInitAbortedError")]
     CacheCacheInitAbortedError,
@@ -299,6 +301,7 @@ impl Display for MessageId {
                 write!(f, "Archive.IncompatibleFilesystemEncodingError")
             }
             MessageId::BackupFileNotFoundError => write!(f, "BackupFileNotFoundError"),
+            MessageId::BackupPermissionError => write!(f, "BackupPermissionError"),
             MessageId::CacheCacheInitAbortedError => write!(f, "Cache.CacheInitAbortedError"),
             MessageId::CacheEncryptionMethodMismatch => write!(f, "Cache.EncryptionMethodMismatch"),
             MessageId::CacheRepositoryAccessAborted => write!(f, "Cache.RepositoryAccessAborted"),
